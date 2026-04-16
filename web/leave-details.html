@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leave Details — UMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ld-table-wrap { overflow-x: auto; }
+    #ld-table td   { color:#212529 !important; background-color:#fff; white-space:nowrap; }
+    #ld-table th   { color:#fff !important; white-space:nowrap; }
+    #ld-table tbody tr:nth-child(odd) td { background-color:#f8f9fa; }
+    #ld-table tbody tr:hover td          { background-color:#e8eaf6; }
+    .modal .form-label { color:#333 !important; font-weight:600; }
+
+    .ld-badge { padding:3px 12px; border-radius:20px; font-size:.78rem; font-weight:700; display:inline-block; }
+    .ld-pending  { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+    .ld-approved { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .ld-rejected { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+
+    /* Action buttons */
+    .ld-btn { display:inline-block; border:none; border-radius:6px; padding:5px 12px; font-size:.8rem; font-weight:600; cursor:pointer; margin-right:3px; transition:opacity .15s; }
+    .ld-btn:hover:not([disabled]) { opacity:.85; }
+    .ld-approve { background:#16a34a; color:#fff; }
+    .ld-reject  { background:#dc2626; color:#fff; }
+    .ld-grey    { background:#e5e7eb; color:#9ca3af; cursor:not-allowed; }
+
+    /* Custom confirm popup */
+    #ld-confirm-overlay {
+      display:none; position:fixed; inset:0; z-index:99999;
+      background:rgba(0,0,0,.55); align-items:center; justify-content:center;
+    }
+    #ld-confirm-overlay.show { display:flex; }
+    #ld-confirm-box {
+      background:#fff; border-radius:16px; padding:32px 28px;
+      max-width:420px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,.25); text-align:center;
+    }
+    #ld-c-icon  { font-size:3rem; margin-bottom:10px; }
+    #ld-c-title { font-size:1.2rem; font-weight:700; margin-bottom:8px; }
+    #ld-c-msg   { font-size:.9rem; color:#555; margin-bottom:22px; line-height:1.6; }
+    .ld-c-btn {
+      border:none; border-radius:8px; padding:10px 26px;
+      font-size:.88rem; font-weight:700; cursor:pointer; margin:0 5px; transition:opacity .15s;
+    }
+    .ld-c-btn:hover { opacity:.85; }
+    #ld-c-no  { background:#f3f4f6; color:#374151; }
+
+    /* Toast */
+    #ld-toast {
+      display:none; position:fixed; bottom:24px; right:24px; z-index:99998;
+      min-width:320px; max-width:440px; padding:14px 18px; border-radius:12px;
+      font-size:.9rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.18);
+    }
+    .ld-toast-ok  { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .ld-toast-err { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link active" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="ld-logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-4 py-4">
+
+    <div class="mb-3">
+      <h4 class="mb-0">Teacher Leave Details</h4>
+      <p class="text-muted small mb-0 mt-1">
+        ✉️ Click <strong style="color:#16a34a;">✅ Approve</strong> or
+        <strong style="color:#dc2626;">❌ Reject</strong> on a Pending leave.
+        Status updates and email sends automatically.
+      </p>
+    </div>
+
+    <!-- Filter -->
+    <div class="row g-2 mb-3 align-items-center">
+      <div class="col-md-3">
+        <input class="form-control form-control-sm" id="ld-filter-id" placeholder="Filter by Teacher ID…">
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" id="ld-filter-st">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary btn-sm" id="ld-filter-btn">Filter</button>
+        <button class="btn btn-outline-secondary btn-sm ms-1" id="ld-clear-btn">Clear</button>
+      </div>
+    </div>
+
+    <div id="ld-msg" class="mb-2"></div>
+
+    <div class="ld-table-wrap">
+      <table class="table table-bordered table-hover align-middle mb-0" id="ld-table">
+        <thead class="table-dark">
+          <tr>
+            <th>Teacher ID</th>
+            <th>Teacher Name</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Leave Type</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th class="text-center" style="min-width:300px;">Actions</th>
+          </tr>
+        </thead>
+        <!-- Use unique ID so script.js cannot find and duplicate this tbody -->
+        <tbody id="ld-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Edit Modal — unique IDs throughout -->
+  <div class="modal fade" id="ld-edit-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">✏️ Edit Leave Record</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="ld-e-id">
+          <div class="mb-3">
+            <label class="form-label">Teacher ID</label>
+            <input class="form-control" id="ld-e-empid" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Teacher Name</label>
+            <input class="form-control" id="ld-e-name" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="ld-e-start">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">End Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="ld-e-end">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Leave Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="ld-e-type"></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="ld-e-status">
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div id="ld-e-msg"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="ld-save-edit">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Popup -->
+  <div id="ld-confirm-overlay">
+    <div id="ld-confirm-box">
+      <div id="ld-c-icon"></div>
+      <div id="ld-c-title"></div>
+      <div id="ld-c-msg"></div>
+      <div>
+        <button id="ld-c-no" class="ld-c-btn">Cancel</button>
+        <button id="ld-c-yes" class="ld-c-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="ld-toast"></div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEAVE DETAILS PAGE — All IDs prefixed with "ld-" to avoid script.js clash
+  // ═══════════════════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    // ── API base ──────────────────────────────────────────────────────────────
+    var BASE = 'http://localhost:3001/api';
+
+    // ── Teacher name cache ────────────────────────────────────────────────────
+    var nameMap = {};
+
+    // ── Toast ─────────────────────────────────────────────────────────────────
+    var toastTimer = null;
+    function showToast(msg, ok) {
+      var el = document.getElementById('ld-toast');
+      el.className = ok ? 'ld-toast-ok' : 'ld-toast-err';
+      el.style.cssText = 'display:block;position:fixed;bottom:24px;right:24px;z-index:99998;' +
+        'min-width:320px;max-width:440px;padding:14px 18px;border-radius:12px;' +
+        'font-size:.9rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.18);' +
+        (ok ? 'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;'
+            : 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;');
+      el.textContent = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function() { el.style.display = 'none'; }, 6000);
+    }
+
+    // ── Page message ──────────────────────────────────────────────────────────
+    function showMsg(html, ok) {
+      document.getElementById('ld-msg').innerHTML =
+        '<div class="alert alert-' + (ok ? 'success' : 'danger') + ' alert-dismissible">' +
+        html + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    // ── Status badge ──────────────────────────────────────────────────────────
+    function mkBadge(s) {
+      var v   = (!s || s === 'null' || s.trim() === '') ? 'Pending' : s.trim();
+      var cls = v === 'Approved' ? 'ld-approved' : v === 'Rejected' ? 'ld-rejected' : 'ld-pending';
+      return '<span class="ld-badge ' + cls + '">' + v + '</span>';
+    }
+
+    // ── Custom confirm popup ──────────────────────────────────────────────────
+    function ldConfirm(opts) {
+      return new Promise(function(resolve) {
+        document.getElementById('ld-c-icon').textContent  = opts.icon  || '❓';
+        document.getElementById('ld-c-title').textContent = opts.title || 'Confirm';
+        document.getElementById('ld-c-msg').innerHTML     = opts.msg   || '';
+
+        var yesEl = document.getElementById('ld-c-yes');
+        yesEl.textContent = opts.yesLabel || 'Confirm';
+        yesEl.style.cssText = 'border:none;border-radius:8px;padding:10px 26px;' +
+          'font-size:.88rem;font-weight:700;cursor:pointer;margin:0 5px;color:#fff;' +
+          'background:' + (opts.yesColor || '#16a34a') + ';';
+
+        document.getElementById('ld-confirm-overlay').classList.add('show');
+
+        function cleanup() {
+          document.getElementById('ld-confirm-overlay').classList.remove('show');
+          yesEl.removeEventListener('click', onYes);
+          document.getElementById('ld-c-no').removeEventListener('click', onNo);
+        }
+        function onYes() { cleanup(); resolve(true);  }
+        function onNo()  { cleanup(); resolve(false); }
+
+        yesEl.addEventListener('click', onYes);
+        document.getElementById('ld-c-no').addEventListener('click', onNo);
+      });
+    }
+
+    // ── Load Leaves ───────────────────────────────────────────────────────────
+    async function loadLeaves() {
+      var filterId = document.getElementById('ld-filter-id').value.trim();
+      var filterSt = document.getElementById('ld-filter-st').value;
+      var tbody    = document.getElementById('ld-tbody');
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3">' +
+        '<div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
+
+      try {
+      // Fetch all teachers and all leaves, then filter client-side
+      var results = await Promise.all([
+        fetch(BASE + '/teachers').then(function(r) { return r.json(); }),
+        fetch(BASE + '/teacher-leaves').then(function(r) { return r.json(); })
+      ]);
+
+      var teachers = results[0];
+      var leaves   = results[1];
+
+      // Rebuild name map
+      nameMap = {};
+      if (Array.isArray(teachers)) {
+        teachers.forEach(function(t) {
+          if (t.empId && !nameMap[t.empId]) nameMap[t.empId] = t.name || t.empId;
+        });
+      }
+
+      // ✅ Filter by ID OR name (client-side)
+      if (filterId) {
+        var q = filterId.toLowerCase();
+        leaves = leaves.filter(function(l) {
+          var empId = (l.empId || '').toLowerCase();
+          var name  = (nameMap[l.empId] || '').toLowerCase();
+          return empId.includes(q) || name.includes(q);
+        });
+      }
+
+      // Status filter
+      if (filterSt) {
+      leaves = leaves.filter(function(l) {
+            var s = (!l.status || l.status === 'null' || l.status.trim() === '') ? 'Pending' : l.status.trim();
+            return s === filterSt;
+          });
+        }
+
+        if (!leaves.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No leave records found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+
+        leaves.forEach(function(l) {
+          var st        = (!l.status || l.status === 'null' || l.status.trim() === '') ? 'Pending' : l.status.trim();
+          var isPending = (st === 'Pending');
+          var lid       = l.id;
+          var empId     = (l.empId || '').replace(/'/g, '');
+          var tName     = (nameMap[empId] || empId || '—').replace(/'/g, '');
+          var ltype     = (l.leaveType || '—').replace(/'/g, '');
+          var sDate     = l.startDate || l.date || '—';
+          var eDate     = l.endDate   || l.date || '—';
+          var dur       = l.duration  || '—';
+
+          // Build approve button
+          var approveBtn = isPending
+            ? '<button class="ld-btn ld-approve ld-do-action" data-lid="' + lid +
+              '" data-empid="' + empId + '" data-action="Approved">✅ Approve</button>'
+            : '<button class="ld-btn ld-grey" disabled title="Already ' + st + '">✅ Approve</button>';
+
+          // Build reject button
+          var rejectBtn = isPending
+            ? '<button class="ld-btn ld-reject ld-do-action" data-lid="' + lid +
+              '" data-empid="' + empId + '" data-action="Rejected">❌ Reject</button>'
+            : '<button class="ld-btn ld-grey" disabled title="Already ' + st + '">❌ Reject</button>';
+
+          var editBtn =
+            '<button class="btn btn-sm btn-outline-secondary ld-do-edit ms-1"' +
+            ' data-lid="' + lid + '" data-empid="' + empId + '"' +
+            ' data-name="' + tName + '" data-start="' + sDate + '"' +
+            ' data-end="' + eDate + '" data-type="' + ltype + '"' +
+            ' data-status="' + st + '">✏️</button>';
+
+          var deleteBtn =
+            '<button class="btn btn-sm btn-outline-danger ld-do-delete ms-1"' +
+            ' data-lid="' + lid + '">🗑️</button>';
+
+          var row = document.createElement('tr');
+          row.innerHTML =
+            '<td>' + (empId || '—') + '</td>' +
+            '<td>' + tName + '</td>' +
+            '<td>' + sDate + '</td>' +
+            '<td>' + eDate + '</td>' +
+            '<td>' + ltype + '</td>' +
+            '<td>' + dur + ' day(s)</td>' +
+            '<td>' + mkBadge(st) + '</td>' +
+            '<td style="text-align:center;white-space:nowrap;">' +
+              approveBtn + rejectBtn + editBtn + deleteBtn +
+            '</td>';
+
+          tbody.appendChild(row);
+        });
+
+      } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-3">Error: ' + err.message + '</td></tr>';
+      }
+    }
+
+    // ── Approve / Reject click ────────────────────────────────────────────────
+    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+      var btn = e.target.closest('.ld-do-action');
+      if (!btn || btn.disabled) return;
+
+      var lid      = btn.dataset.lid;
+      var empId    = btn.dataset.empid;
+      var action   = btn.dataset.action;
+      var tName    = nameMap[empId] || empId;
+      var isApprove = (action === 'Approved');
+
+      var confirmed = await ldConfirm({
+        icon:     isApprove ? '✅' : '❌',
+        title:    isApprove ? 'Approve Leave' : 'Reject Leave',
+        msg:      '<strong>' + tName + '</strong><br><span style="color:#6b7280;">Teacher ID: ' + empId + '</span><br><br>' +
+                  '📧 An approval email will be sent to the teacher automatically.',
+        yesColor: isApprove ? '#16a34a' : '#dc2626',
+        yesLabel: isApprove ? '✅ Yes, Approve' : '❌ Yes, Reject'
+      });
+
+      if (!confirmed) return;
+
+      // Disable while processing
+      btn.disabled    = true;
+      btn.textContent = '⏳';
+
+      try {
+        var res  = await fetch(BASE + '/teacher-leaves/' + lid, {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: action })
+        });
+        var data = await res.json();
+
+        if (data.success) {
+          var msg = data.message || ('Leave ' + action + ' successfully.');
+          showMsg((isApprove ? '✅ ' : '❌ ') + msg, true);
+          var emailOk = msg.toLowerCase().includes('email sent');
+          showToast(
+            emailOk
+              ? '📧 Email sent successfully!'
+              : '⚠️ ' + (msg.includes('No email') ? 'Teacher has no email address on record.' : msg),
+            emailOk
+          );
+          loadLeaves();
+        } else {
+          showMsg('❌ ' + (data.error || 'Action failed.'), false);
+          btn.disabled    = false;
+          btn.textContent = isApprove ? '✅ Approve' : '❌ Reject';
+        }
+      } catch(err) {
+        showMsg('❌ Server error: ' + err.message, false);
+        btn.disabled    = false;
+        btn.textContent = isApprove ? '✅ Approve' : '❌ Reject';
+      }
+    });
+
+    // ── Edit click ────────────────────────────────────────────────────────────
+    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+      var btn = e.target.closest('.ld-do-edit');
+      if (!btn) return;
+
+      document.getElementById('ld-e-id').value     = btn.dataset.lid;
+      document.getElementById('ld-e-empid').value  = btn.dataset.empid;
+      document.getElementById('ld-e-name').value   = btn.dataset.name;
+      document.getElementById('ld-e-start').value  = btn.dataset.start;
+      document.getElementById('ld-e-end').value    = btn.dataset.end;
+      document.getElementById('ld-e-status').value = btn.dataset.status;
+      document.getElementById('ld-e-msg').innerHTML = '';
+
+      try {
+        var res   = await fetch(BASE + '/leave-types');
+        var types = await res.json();
+        var sel   = document.getElementById('ld-e-type');
+        sel.innerHTML = '';
+        types.forEach(function(t) {
+          var o = document.createElement('option');
+          o.value = t.leaveTypeName; o.text = t.leaveTypeName;
+          sel.appendChild(o);
+        });
+        sel.value = btn.dataset.type;
+      } catch(e) { console.error('leave types error:', e); }
+
+      new bootstrap.Modal(document.getElementById('ld-edit-modal')).show();
+    });
+
+    // ── Save edit ─────────────────────────────────────────────────────────────
+    document.getElementById('ld-save-edit').addEventListener('click', async function() {
+      var id        = document.getElementById('ld-e-id').value;
+      var startDate = document.getElementById('ld-e-start').value;
+      var endDate   = document.getElementById('ld-e-end').value;
+      var leaveType = document.getElementById('ld-e-type').value;
+      var status    = document.getElementById('ld-e-status').value;
+
+      if (!startDate || !endDate || !leaveType) {
+        document.getElementById('ld-e-msg').innerHTML =
+          '<div class="alert alert-danger">All fields are required.</div>';
+        return;
+      }
+      var duration = Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000) + 1;
+
+      try {
+        var res  = await fetch(BASE + '/teacher-leaves/' + id, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ startDate: startDate, endDate: endDate, leaveType: leaveType, status: status, duration: String(duration) })
+        });
+        var data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('ld-edit-modal')).hide();
+          showMsg('✅ Leave updated successfully.', true);
+          loadLeaves();
+        } else {
+          document.getElementById('ld-e-msg').innerHTML =
+            '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('ld-e-msg').innerHTML =
+          '<div class="alert alert-danger">❌ ' + err.message + '</div>';
+      }
+    });
+
+    // ── Delete click ──────────────────────────────────────────────────────────
+    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+      var btn = e.target.closest('.ld-do-delete');
+      if (!btn) return;
+
+      var lid = btn.dataset.lid;
+
+      var confirmed = await ldConfirm({
+        icon:     '🗑️',
+        title:    'Delete Leave Record',
+        msg:      'This action <strong>cannot be undone</strong>.<br>The leave record will be permanently deleted.',
+        yesColor: '#dc2626',
+        yesLabel: '🗑️ Yes, Delete'
+      });
+      if (!confirmed) return;
+
+      try {
+        var res  = await fetch(BASE + '/teacher-leaves/' + lid, { method: 'DELETE' });
+        var data = await res.json();
+        if (data.success) {
+          showMsg('✅ Leave record deleted.', true);
+          loadLeaves();
+        } else {
+          showMsg('❌ ' + (data.error || 'Failed'), false);
+        }
+      } catch(err) { showMsg('❌ ' + err.message, false); }
+    });
+
+    // ── Filter ────────────────────────────────────────────────────────────────
+    document.getElementById('ld-filter-btn').addEventListener('click', loadLeaves);
+    document.getElementById('ld-clear-btn').addEventListener('click', function() {
+      document.getElementById('ld-filter-id').value = '';
+      document.getElementById('ld-filter-st').value = '';
+      loadLeaves();
+    });
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+    document.getElementById('ld-logout').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('umsLoggedIn');
+      window.location.href = 'index.html';
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function() {
+      // Block script.js from interfering with this page
+      // by overriding any leave-table function it may try to run
+      if (typeof window.loadLeaveDetails === 'function') {
+        window.loadLeaveDetails = function() {};
+      }
+      loadLeaves();
+    });
+
+  })(); // end IIFE — completely isolated from script.js
+  </script>
+</body>
+</html>

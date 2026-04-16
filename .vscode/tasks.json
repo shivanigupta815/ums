@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Generate source file list",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-ChildItem -Recurse -Filter *.java -Path src | ForEach-Object { '\"' + $_.FullName + '\"' } | Set-Content src-files-quoted.txt"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Java Project",
+			"type": "shell",
+			"command": "javac",
+			"args": [
+				"--release", "17",
+				"-cp",
+				"lib/Jar/mysql-connector-java-8.0.28.jar;lib/Jar/jcalendar-tz-1.3.3-4.jar;lib/Jar/rs2xml.jar",
+				"-d",
+				"bin",
+				"@src-files-quoted.txt"
+			],
+			"dependsOn": "Generate source file list",
+			"problemMatcher": [
+				"$javac"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Run University Management System",
+			"type": "shell",
+			"command": "java",
+			"args": [
+				"-cp",
+				"bin;lib/Jar/mysql-connector-java-8.0.28.jar;lib/Jar/jcalendar-tz-1.3.3-4.jar;lib/Jar/rs2xml.jar",
+				"university.management.system.Splash"
+			],
+			"dependsOn": "Build Java Project",
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		}
+	]
+}

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fee Structure — UMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .course-code-badge {
+      background: rgba(16,185,129,0.2);
+      color: #6ee7b7;
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-family: monospace;
+      letter-spacing: 1px;
+    }
+    .total-badge {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .sem-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+    @media (max-width: 768px) { .sem-grid { grid-template-columns: repeat(2,1fr); } }
+    .sem-field label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .form-section {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(124,58,237,0.35);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-section h5 {
+      color: #f0abfc;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+    }
+    .live-total-box {
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(167,139,250,0.4);
+      border-radius: 10px;
+      padding: 0.85rem 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .live-total-box .label { color: #94a3b8; font-size: 0.85rem; }
+    .live-total-box .amount { color: #f0abfc; font-size: 1.3rem; font-weight: 800; }
+    .neon-panel-fee {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    #feeTableWrapper { overflow-x: auto; }
+    #feeMessage { border-radius: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link active" href="fee-structure.html">Fee Structure</a></li>
+          <!-- <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance</a></li> -->
+          <!-- <li class="nav-item"><a class="nav-link" href="exam-details.html">Examination</a></li> -->
+          <li class="nav-item"><a class="nav-link" href="#" id="logoutButton">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+
+    <!-- Header row -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="mb-0">Fee Structure</h2>
+        <p class="text-muted small mb-0 mt-1"></p>
+      </div>
+      <button class="btn btn-primary" id="showAddFormBtn">+ Add New Course</button>
+    </div>
+
+    <!-- Status message -->
+    <div id="feeMessage" class="mb-3 alert"></div>
+
+    <!-- Add / Edit Form -->
+    <div class="form-section" id="feeFormSection" style="display:none;">
+      <h5 id="formTitle">➕ Add New Course Fee</h5>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label small text-uppercase fw-bold" style="color:#94a3b8;letter-spacing:.8px;">
+            Course Code <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control" id="feeCode"
+                 placeholder="e.g. BTECH-CS" maxlength="30"
+                 style="text-transform:uppercase;">
+          <div class="form-text text-muted" style="font-size:.72rem;">Unique key — cannot be changed after saving</div>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label small text-uppercase fw-bold" style="color:#94a3b8;letter-spacing:.8px;">
+            Course Name <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control" id="feeCourse"
+                 placeholder="e.g. B.Tech - Computer Science">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-uppercase fw-bold" style="color:#94a3b8;letter-spacing:.8px;">
+            Branch / Specialization
+          </label>
+          <input type="text" class="form-control" id="feeBranch"
+                 placeholder="e.g. Computer Science">
+        </div>
+      </div>
+
+      <!-- Semester fees grid -->
+      <label class="form-label small text-uppercase fw-bold mb-2" style="color:#94a3b8;letter-spacing:.8px;">
+        Semester-wise Fees (₹)
+      </label>
+      <div class="sem-grid mb-3">
+        <div class="sem-field"><label>Sem 1</label><input type="number" class="form-control" id="feeSem1" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 2</label><input type="number" class="form-control" id="feeSem2" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 3</label><input type="number" class="form-control" id="feeSem3" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 4</label><input type="number" class="form-control" id="feeSem4" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 5</label><input type="number" class="form-control" id="feeSem5" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 6</label><input type="number" class="form-control" id="feeSem6" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 7</label><input type="number" class="form-control" id="feeSem7" placeholder="0" min="0"></div>
+        <div class="sem-field"><label>Sem 8</label><input type="number" class="form-control" id="feeSem8" placeholder="0" min="0"></div>
+      </div>
+
+      <!-- Live total -->
+      <div class="live-total-box">
+        <span class="label">Total Course Fees (sum of all semesters)</span>
+        <span class="amount" id="liveTotalDisplay">₹ 0</span>
+      </div>
+
+      <input type="hidden" id="feeEditCode" value="">
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" id="saveFeeBtn">💾 Save to Database</button>
+        <button class="btn btn-secondary" id="cancelFeeBtn">✕ Cancel</button>
+      </div>
+    </div>
+
+    <!-- Fee Table -->
+    <div class="neon-panel-fee">
+      <div id="feeTableWrapper">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Course Code</th>
+              <th>Course Name</th>
+              <th>Branch</th>
+              <th class="text-end">Sem 1</th>
+              <th class="text-end">Sem 2</th>
+              <th class="text-end">Sem 3</th>
+              <th class="text-end">Sem 4</th>
+              <th class="text-end">Sem 5</th>
+              <th class="text-end">Sem 6</th>
+              <th class="text-end">Sem 7</th>
+              <th class="text-end">Sem 8</th>
+              <th class="text-end">Total</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="feeTableBody">
+            <tr><td colspan="13" class="text-center py-4 text-muted">
+              <div class="spinner-border spinner-border-sm me-2"></div>Loading...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal fade" id="deleteFeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark border border-secondary">
+        <div class="modal-header bg-danger text-white border-0">
+          <h5 class="modal-title fw-bold">🗑️ Confirm Delete</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-light">
+          <p>Are you sure you want to delete the fee record for:</p>
+          <p class="fw-bold text-warning" id="deleteCourseName"></p>
+          <p class="text-muted small mb-0">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteFeeBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    const SEM_IDS = ['feeSem1','feeSem2','feeSem3','feeSem4','feeSem5','feeSem6','feeSem7','feeSem8'];
+
+    // Format as ₹
+    function fmt(n) {
+      const num = Number(n) || 0;
+      return num === 0 ? '—' : '₹' + num.toLocaleString('en-IN');
+    }
+
+    // Calc total from sem inputs
+    function calcTotal() {
+      return SEM_IDS.reduce((sum, id) => sum + (parseFloat($('#' + id).val()) || 0), 0);
+    }
+
+    // Live total update
+    SEM_IDS.forEach(id => {
+      $('#' + id).on('input', function() {
+        $('#liveTotalDisplay').text('₹ ' + calcTotal().toLocaleString('en-IN'));
+      });
+    });
+
+    // Auto uppercase course code
+    $('#feeCode').on('input', function() {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+
+    // Show message
+    function showMsg(html, type) {
+      const el = $('#feeMessage');
+      el.attr('class', 'mb-3 alert alert-' + (type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'));
+      el.html(html).show();
+      if (type === 'success') setTimeout(() => el.fadeOut(), 4000);
+    }
+
+    // Load fee table
+    async function loadFees() {
+      const tbody = $('#feeTableBody');
+      tbody.html('<tr><td colspan="13" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>');
+      try {
+        const fees = await apiGet('/fees');
+        if (!fees.length) {
+          tbody.html('<tr><td colspan="13" class="text-center py-4 text-muted">No fee records found. Click "+ Add New Course" to get started.</td></tr>');
+          return;
+        }
+        tbody.empty();
+        fees.forEach(row => {
+          // Handle both lowercase and mixed case column names from MySQL
+          const sems = [
+            row.semester1 || row.Semester1 || 0,
+            row.semester2 || row.Semester2 || 0,
+            row.semester3 || row.Semester3 || 0,
+            row.semester4 || row.Semester4 || 0,
+            row.semester5 || row.Semester5 || 0,
+            row.semester6 || row.Semester6 || 0,
+            row.semester7 || row.Semester7 || 0,
+            row.semester8 || row.Semester8 || 0
+          ];
+          const total     = sems.reduce((s, v) => s + (Number(v) || 0), 0);
+          const code      = row.courseCode || '';
+          const course    = row.course     || '';
+          const branch    = row.branch     || '';
+
+          tbody.append(`
+            <tr>
+              <td><span class="course-code-badge">${code || '—'}</span></td>
+              <td>${course}</td>
+             <td class="small" style="color:#e2e8f0;">${branch || '—'}</td>
+              ${sems.map(s => `<td class="text-end small">${fmt(s)}</td>`).join('')}
+              <td class="text-end"><span class="total-badge">${'₹' + total.toLocaleString('en-IN')}</span></td>
+              <td class="text-center" style="white-space:nowrap;">
+                <button class="btn btn-sm btn-outline-light btn-edit-fee me-1"
+                        data-code="${code}" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-fee"
+                        data-code="${code}" data-name="${course}" title="Delete">🗑️</button>
+              </td>
+            </tr>`);
+        });
+      } catch (err) {
+        tbody.html(`<tr><td colspan="13" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`);
+      }
+    }
+
+    // Show/hide form
+    function showForm(title, lockCode) {
+      $('#formTitle').text(title);
+      $('#feeCode').prop('readonly', lockCode);
+      $('#feeCode').css('opacity', lockCode ? '0.6' : '1');
+      $('#feeFormSection').slideDown(200);
+      $('#showAddFormBtn').hide();
+      $('html,body').animate({ scrollTop: $('#feeFormSection').offset().top - 80 }, 300);
+    }
+    function hideForm() {
+      $('#feeFormSection').slideUp(200);
+      $('#showAddFormBtn').show();
+      $('#feeCode, #feeCourse, #feeBranch').val('');
+      SEM_IDS.forEach(id => $('#' + id).val(''));
+      $('#liveTotalDisplay').text('₹ 0');
+      $('#feeEditCode').val('');
+    }
+
+    // Add button
+    $('#showAddFormBtn').on('click', function() {
+      hideForm();
+      setTimeout(() => showForm('➕ Add New Course Fee', false), 10);
+    });
+
+    // Cancel button
+    $('#cancelFeeBtn').on('click', hideForm);
+
+    // Save button
+    $('#saveFeeBtn').on('click', async function() {
+      const code      = $('#feeCode').val().trim().toUpperCase();
+      const course    = $('#feeCourse').val().trim();
+      const branch    = $('#feeBranch').val().trim();
+      const editCode  = $('#feeEditCode').val();
+      const isEdit    = !!editCode;
+
+      if (!code)   { showMsg('❌ Course Code is required.', 'error');   return; }
+      if (!course) { showMsg('❌ Course Name is required.', 'error');   return; }
+
+      const payload = {
+        courseCode: code, course, branch,
+        semester1: parseFloat($('#feeSem1').val()) || 0,
+        semester2: parseFloat($('#feeSem2').val()) || 0,
+        semester3: parseFloat($('#feeSem3').val()) || 0,
+        semester4: parseFloat($('#feeSem4').val()) || 0,
+        semester5: parseFloat($('#feeSem5').val()) || 0,
+        semester6: parseFloat($('#feeSem6').val()) || 0,
+        semester7: parseFloat($('#feeSem7').val()) || 0,
+        semester8: parseFloat($('#feeSem8').val()) || 0,
+      };
+
+      try {
+        if (isEdit) {
+          await apiPut(`/fees/${encodeURIComponent(editCode)}`, payload);
+          showMsg('✅ Fee structure updated successfully!', 'success');
+        } else {
+          await apiPost('/fees', payload);
+          showMsg('✅ Course fee added successfully!', 'success');
+        }
+        hideForm();
+        await loadFees();
+      } catch (err) {
+        showMsg('❌ ' + err.message, 'error');
+      }
+    });
+
+    // Edit button
+    $(document).on('click', '.btn-edit-fee', async function() {
+      const code = $(this).data('code');
+      if (!code) { showMsg('❌ No course code found for this row.', 'error'); return; }
+      try {
+        const fees = await apiGet('/fees');
+        const row  = fees.find(f => f.courseCode === code);
+        if (!row) { showMsg('❌ Record not found.', 'error'); return; }
+
+        $('#feeCode').val(row.courseCode   || '');
+        $('#feeCourse').val(row.course     || '');
+        $('#feeBranch').val(row.branch     || '');
+        $('#feeSem1').val(row.semester1    || row.Semester1 || '');
+        $('#feeSem2').val(row.semester2    || row.Semester2 || '');
+        $('#feeSem3').val(row.semester3    || row.Semester3 || '');
+        $('#feeSem4').val(row.semester4    || row.Semester4 || '');
+        $('#feeSem5').val(row.semester5    || row.Semester5 || '');
+        $('#feeSem6').val(row.semester6    || row.Semester6 || '');
+        $('#feeSem7').val(row.semester7    || row.Semester7 || '');
+        $('#feeSem8').val(row.semester8    || row.Semester8 || '');
+        $('#feeEditCode').val(code);
+        $('#liveTotalDisplay').text('₹ ' + calcTotal().toLocaleString('en-IN'));
+        showForm('✏️ Edit Course Fee — ' + code, true);
+      } catch (err) {
+        showMsg('❌ ' + err.message, 'error');
+      }
+    });
+
+    // Delete button
+    let pendingDeleteCode = null;
+    $(document).on('click', '.btn-delete-fee', function() {
+      pendingDeleteCode = $(this).data('code');
+      $('#deleteCourseName').text($(this).data('name') + ' (' + pendingDeleteCode + ')');
+      new bootstrap.Modal(document.getElementById('deleteFeeModal')).show();
+    });
+
+    $('#confirmDeleteFeeBtn').on('click', async function() {
+      bootstrap.Modal.getInstance(document.getElementById('deleteFeeModal')).hide();
+      try {
+        await apiDelete(`/fees/${encodeURIComponent(pendingDeleteCode)}`);
+        showMsg('✅ Course deleted successfully.', 'success');
+        await loadFees();
+      } catch (err) {
+        showMsg('❌ ' + err.message, 'error');
+      }
+      pendingDeleteCode = null;
+    });
+
+    // Load on ready
+    $(document).ready(function() {
+      loadFees();
+    });
+  </script>
+</body>
+</html>

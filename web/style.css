@@ -1,0 +1,227 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at 25% 20%, #4400ff 0%, #180026 35%, #06040a 100%);
+  color: #ffffff;
+  min-height: 100vh;
+}
+
+a, .text-neon-link {
+  color: #65fff3;
+  text-decoration: none;
+}
+
+a:hover, .text-neon-link:hover {
+  color: #f9f;
+  text-decoration: underline;
+}
+
+.dashboard-page {
+  max-width: 1200px;
+}
+
+.neon-card, .neon-panel {
+  background: rgba(15, 10, 35, 0.85);
+  border: 1px solid rgba(128, 0, 255, 0.45);
+  box-shadow: 0 0 18px rgba(141, 40, 255, 0.55), 0 0 32px rgba(0, 221, 255, 0.33);
+}
+
+.neon-border {
+  border: 1px solid rgba(91, 98, 255, 0.7) !important;
+  box-shadow: 0 0 20px rgba(123, 75, 255, 0.6), inset 0 0 14px rgba(46, 255, 255, 0.3);
+}
+
+.dash-header h1 {
+  text-shadow: 0 0 15px #1ee1ff, 0 0 25px #ff69da;
+}
+
+.text-neon-cyan { color: #69f3fd !important; }
+.text-neon-pink { color: #ff6cf0 !important; }
+.text-neon-green { color: #8affa5 !important; }
+.text-neon-violet { color: #cb9cff !important; }
+.text-neon-orange { color: #fcbf5a !important; }
+
+.metric-value {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+.progress.neon-progress .progress-bar {
+  background: linear-gradient(90deg, #34ffe2, #5191ff, #d54eff);
+  box-shadow: 0 0 15px rgba(79, 149, 255, 0.85);
+}
+
+.table-responsive table {
+  color: #e5e7ff;
+}
+
+.table-responsive tr:nth-child(even) {
+  background: rgba(40, 20, 70, 0.45);
+}
+
+#login-screen, #splash-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: linear-gradient(135deg, rgba(5, 11, 33, 0.82), rgba(13, 3, 26, 0.92)),
+    url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=2000&q=80');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff;
+  padding: 1rem;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+}
+
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: linear-gradient(135deg, rgba(0, 0, 15, 0.84), rgba(12, 4, 28, 0.92)),
+    url('https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?auto=format&fit=crop&w=2000&q=80');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff;
+  padding: 1rem;
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.7);
+}
+
+#login-screen .login-horizontal-card {
+  background: rgba(6, 12, 31, 0.88);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(114, 240, 255, 0.5);
+  box-shadow: 0 0 30px rgba(47, 209, 255, 0.40), inset 0 0 20px rgba(246, 88, 234, 0.16);
+}
+
+#login-screen .login-info h4 {
+  color: #fff;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  text-shadow: 0 0 12px rgba(54, 238, 255, 0.75);
+}
+
+#login-screen .login-info p {
+  color: rgba(219, 245, 255, 0.95);
+}
+
+#login-screen .form-control {
+  background: rgba(5, 5, 18, 0.85);
+  color: #d4f2ff;
+  border: 1px solid rgba(89, 165, 255, 0.9);
+  min-width: 180px;
+}
+
+#login-screen .form-control:focus {
+  border-color: #71d4ff;
+  box-shadow: 0 0 14px rgba(44, 190, 255, 0.55);
+}
+
+#login-screen .btn-primary {
+  background: linear-gradient(90deg, #22d7ff 0%, #7532ff 100%);
+  border: 1px solid #61a9ff;
+  color: #fff;
+  box-shadow: 0 0 22px rgba(54, 195, 255, 0.7);
+}
+
+#login-screen .btn-primary:hover {
+  background: linear-gradient(90deg, #18c2ff 0%, #6f23ff 100%);
+}
+
+#login-screen .alert {
+  background: rgba(230, 76, 94, 0.95);
+  color: #fff;
+}
+
+#login-screen .login-horizontal-card .card-body {
+  padding: 1.25rem;
+}
+
+#login-screen .d-flex .form-control {
+  box-shadow: none;
+}
+
+
+#login-screen .card .card-title {
+  color: #1af4ff;
+  text-shadow: 0 0 16px #5ef6ff;
+}
+
+#login-screen .card .form-label {
+  color: #daf3ff;
+}
+
+#login-screen .form-control {
+  background: rgba(5, 5, 18, 0.85);
+  color: #d4f2ff;
+  border: 1px solid rgba(89, 165, 255, 0.8);
+}
+
+#login-screen .form-control:focus {
+  border-color: #3bf4ff;
+  box-shadow: 0 0 10px rgba(60, 244, 255, 0.55);
+}
+
+#login-screen .btn-primary {
+  background: linear-gradient(120deg, #6b3bff, #4ee2ff);
+  border: 1px solid #5a77ff;
+  color: #fff;
+  box-shadow: 0 0 22px rgba(47, 203, 255, 0.7);
+}
+
+#login-screen .btn-primary:hover {
+  background: linear-gradient(120deg, #5f2fff, #42d8ff);
+}
+
+#login-screen .alert {
+  background: rgba(230, 76, 94, 0.95);
+  color: #fff;
+}
+
+.navbar {
+  background: linear-gradient(135deg, rgba(63, 32, 200, 0.90), rgba(19, 150, 255, 0.85));
+  border: 1px solid rgba(91, 238, 255, 0.6);
+  box-shadow: 0 0 16px rgba(38, 171, 255, 0.55);
+}
+
+.navbar-brand,
+.nav-link,
+.navbar-toggler-icon {
+  color: #ed93ff !important;
+}
+
+.nav-link {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3cf3ff, #fa6dff, #fffc39);
+  transition: width 250ms ease-in;
+}
+
+.nav-link:hover::after,
+.nav-item.active .nav-link::after {
+  width: 100%;
+}
+
+.navbar-brand {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.06rem;
+  color: #f3f7ff !important;
+  text-shadow: 0 0 8px rgba(255, 241, 113, 0.7);
+}
+

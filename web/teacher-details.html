@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher Details — UMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #teacherTableWrapper { overflow-x: auto; }
+    #teacherTableWrapper table td, #teacherTableWrapper table th { white-space: nowrap; }
+    .action-btn { white-space: nowrap; }
+    .modal .form-label { color: #333 !important; font-weight: 600; }
+    .info-badge {
+      font-size: .72rem; padding: 2px 9px; border-radius: 20px;
+      font-weight: 600; display: inline-block;
+    }
+    .badge-male        { background: #dbeafe; color: #1e40af; }
+    .badge-female      { background: #fce7f3; color: #9d174d; }
+    .badge-other       { background: #f3f4f6; color: #374151; }
+    .badge-married     { background: #d1fae5; color: #065f46; }
+    .badge-single      { background: #fef3c7; color: #92400e; }
+    .badge-divorced    { background: #fee2e2; color: #991b1b; }
+    .badge-teaching    { background: #ede9fe; color: #5b21b6; }
+    .badge-nonteaching { background: #fee2e2; color: #991b1b; }
+    #tableMessage .alert { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link active" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-leave-quota.html">Leave Quota</a></li>
+          <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="logoutButton">Logout</a></li>
+        </ul>
+        <div class="d-flex gap-2 ms-3">
+          <input class="form-control form-control-sm" id="searchInput"
+                 placeholder="Search by ID, name, dept…" style="width:220px;">
+          <button class="btn btn-sm btn-outline-light" id="searchBtn">Search</button>
+          <button class="btn btn-sm btn-outline-secondary" id="clearBtn">Clear</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">Teacher Details</h4>
+      <a href="add-teacher.html" class="btn btn-primary btn-sm">+ Add Teacher</a>
+    </div>
+
+    <div id="tableMessage" class="mb-3"></div>
+
+    <div id="teacherTableWrapper">
+      <table class="table table-bordered table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Father's Name</th>
+            <th>DOB</th>
+            <th>Department</th>
+            <th>Qualification</th>
+            <th>Staff Type</th>
+            <th>Gender</th>
+            <th>Marital Status</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Aadhar</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="teacherList"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">✏️ Edit Teacher</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editTeacherForm" class="row g-3">
+            <input type="hidden" id="editOriginalEmpId">
+
+            <div class="col-md-6">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input class="form-control" id="editName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Father's Name</label>
+              <input class="form-control" id="editFname">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Employee ID <span class="text-danger">*</span></label>
+              <input class="form-control" id="editEmpId" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" class="form-control" id="editDob">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" id="editEmail" placeholder="teacher@email.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-control" id="editPhone">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Department <span class="text-danger">*</span></label>
+              <select class="form-select" id="editDepartment" required>
+                <option value="">-- Select --</option>
+                <option>B.C.A</option><option>B.B.A</option><option>B.COM</option>
+                <option>B.A</option><option>B.SC</option><option>M.A</option>
+                <option>M.SC</option><option>M.COM</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Qualification</label>
+              <select class="form-select" id="editEducation">
+                <option value="">-- Select --</option>
+                <option>B.Tech</option><option>P.hd</option><option>BBA</option>
+                <option>BCA</option><option>Bsc</option><option>Msc</option>
+                <option>MBA</option><option>MCA</option><option>MCom</option>
+                <option>MA</option><option>BA</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Staff Type <span class="text-danger">*</span></label>
+              <select class="form-select" id="editStaffType">
+                <option value="">-- Select --</option>
+                <option value="Teaching Staff">Teaching Staff</option>
+                <option value="Non-Teaching Staff">Non-Teaching Staff</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select class="form-select" id="editGender">
+                <option value="">-- Select --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Marital Status</label>
+              <select class="form-select" id="editMaritalStatus">
+                <option value="">-- Select --</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Address</label>
+              <input class="form-control" id="editAddress">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Aadhar Number</label>
+              <input class="form-control" id="editAadhar" maxlength="12">
+            </div>
+          </form>
+          <div id="editMessage" class="mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="saveEditBtn">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="ums-confirm.js"></script>
+  <script src="script.js"></script>
+
+  <script> 
+    // Block script.js from rendering its own teacher table on this page
+    window.renderTeachers = function() { return; };
+
+    // Also remove script.js's saveEditBtn handler before our own runs
+    $(document).ready(function() {
+      $('#saveEditBtn').off('click');
+    });
+
+    // Use window.TAPI to avoid conflicts with script.js
+    window.TAPI = (location.protocol === 'file:') ? 'http://localhost:3001/api' : '/api';
+
+    // ── Safe display helper ────────────────────────────────────────────────────
+    // Returns "—" for null/empty/undefined, otherwise the value
+    function disp(val) {
+      if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') {
+        return '<span class="text-muted">—</span>';
+      }
+      return String(val);
+    }
+
+    // ── Badge helpers with EMAIL VALIDATION ────────────────────────────────────
+    // Prevents email/wrong values from showing in staff/gender/marital columns
+    var VALID_STAFF   = ['Teaching Staff', 'Non-Teaching Staff'];
+    var VALID_GENDER  = ['Male', 'Female', 'Other'];
+    var VALID_MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
+
+    function staffBadge(val) {
+      if (!val || !VALID_STAFF.includes(val)) return '<span class="text-muted">—</span>';
+      var cls = val === 'Teaching Staff' ? 'badge-teaching' : 'badge-nonteaching';
+      return '<span class="info-badge ' + cls + '">' + val + '</span>';
+    }
+
+    function genderBadge(val) {
+      if (!val || !VALID_GENDER.includes(val)) return '<span class="text-muted">—</span>';
+      var cls = val === 'Male' ? 'badge-male' : val === 'Female' ? 'badge-female' : 'badge-other';
+      return '<span class="info-badge ' + cls + '">' + val + '</span>';
+    }
+
+    function maritalBadge(val) {
+      if (!val || !VALID_MARITAL.includes(val)) return '<span class="text-muted">—</span>';
+      var cls = val === 'Married' ? 'badge-married' : val === 'Divorced' ? 'badge-divorced' : 'badge-single';
+      return '<span class="info-badge ' + cls + '">' + val + '</span>';
+    }
+
+    // Safe email display — only shows value if it looks like an email
+    function emailDisp(val) {
+      if (!val || val === 'null' || !val.includes('@')) return '<span class="text-muted">—</span>';
+      return '<a href="mailto:' + val + '" style="color:inherit;">' + val + '</a>';
+    }
+
+    // ── Load Teachers ──────────────────────────────────────────────────────────
+    async function loadTeachers(filter) {
+      var tbody = document.getElementById('teacherList');
+      tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
+
+      try {
+        var res      = await fetch(window.TAPI + '/teachers');
+        var teachers = await res.json();
+
+        // Filter
+        if (filter) {
+          var q = filter.toLowerCase();
+          teachers = teachers.filter(function(t) {
+            return (t.empId      || '').toLowerCase().includes(q) ||
+                   (t.name       || '').toLowerCase().includes(q) ||
+                   (t.department || '').toLowerCase().includes(q) ||
+                   (t.staffType  || '').toLowerCase().includes(q) ||
+                   (t.gender     || '').toLowerCase().includes(q) ||
+                   (t.email      || '').toLowerCase().includes(q) ||
+                   (t.phone      || '').toLowerCase().includes(q);
+          });
+        }
+
+        if (!teachers.length) {
+          tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3">No teacher records found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        teachers.forEach(function(t) {
+          // Safely encode teacher data for edit button
+          var safeData = JSON.stringify({
+            empId:         t.empId         || '',
+            name:          t.name          || '',
+            fname:         t.fname         || '',
+            dob:           t.dob           || '',
+            email:         t.email         || '',
+            phone:         t.phone         || '',
+            address:       t.address       || '',
+            aadhar:        t.aadhar        || '',
+            department:    t.department    || '',
+            education:     t.education     || '',
+            staffType:     VALID_STAFF.includes(t.staffType)   ? t.staffType   : '',
+            gender:        VALID_GENDER.includes(t.gender)     ? t.gender      : '',
+            maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus : ''
+          });
+          var encoded = encodeURIComponent(safeData);
+
+          var row = document.createElement('tr');
+          row.innerHTML =
+            '<td><strong>' + disp(t.empId) + '</strong></td>' +
+            '<td>' + disp(t.name) + '</td>' +
+            '<td>' + disp(t.fname) + '</td>' +
+            '<td>' + disp(t.dob) + '</td>' +
+            '<td>' + disp(t.department) + '</td>' +
+            '<td>' + disp(t.education) + '</td>' +
+            // ── KEY FIX: validate values before displaying in badge columns ──
+            '<td>' + staffBadge(t.staffType) + '</td>' +
+            '<td>' + genderBadge(t.gender) + '</td>' +
+            '<td>' + maritalBadge(t.maritalStatus) + '</td>' +
+            // ── Email only shows if it contains @ ──
+            '<td>' + emailDisp(t.email) + '</td>' +
+            '<td>' + disp(t.phone) + '</td>' +
+            '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">' + disp(t.address) + '</td>' +
+            '<td>' + disp(t.aadhar) + '</td>' +
+            '<td class="action-btn text-center">' +
+              '<button class="btn btn-sm btn-warning edit-teacher me-1" data-teacher="' + encoded + '">✏️ Edit</button>' +
+              '<button class="btn btn-sm btn-danger remove-teacher" data-empid="' + (t.empId || '') + '">🗑️ Delete</button>' +
+            '</td>';
+
+          tbody.appendChild(row);
+        });
+
+      } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger py-3">Error: ' + err.message + '</td></tr>';
+      }
+    }
+
+    // ── Search ────────────────────────────────────────────────────────────────
+    document.getElementById('searchBtn').addEventListener('click', function() {
+      loadTeachers(document.getElementById('searchInput').value.trim());
+    });
+    document.getElementById('clearBtn').addEventListener('click', function() {
+      document.getElementById('searchInput').value = '';
+      loadTeachers();
+    });
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') loadTeachers(this.value.trim());
+    });
+
+    // ── Edit button → open modal ──────────────────────────────────────────────
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.edit-teacher');
+      if (!btn) return;
+
+      var t;
+      try { t = JSON.parse(decodeURIComponent(btn.dataset.teacher)); }
+      catch(err) { alert('Could not load teacher data.'); return; }
+
+      document.getElementById('editOriginalEmpId').value  = t.empId         || '';
+      document.getElementById('editEmpId').value          = t.empId         || '';
+      document.getElementById('editName').value           = t.name          || '';
+      document.getElementById('editFname').value          = t.fname         || '';
+      document.getElementById('editDob').value            = t.dob           || '';
+      document.getElementById('editEmail').value          = t.email         || '';
+      document.getElementById('editPhone').value          = t.phone         || '';
+      document.getElementById('editAddress').value        = t.address       || '';
+      document.getElementById('editAadhar').value         = t.aadhar        || '';
+      document.getElementById('editDepartment').value     = t.department    || '';
+      document.getElementById('editEducation').value      = t.education     || '';
+      document.getElementById('editStaffType').value      = t.staffType     || '';
+      document.getElementById('editGender').value         = t.gender        || '';
+      document.getElementById('editMaritalStatus').value  = t.maritalStatus || '';
+      document.getElementById('editMessage').innerHTML    = '';
+
+      new bootstrap.Modal(document.getElementById('editTeacherModal')).show();
+    });
+
+    // ── Save Edit ─────────────────────────────────────────────────────────────
+    document.getElementById('saveEditBtn').addEventListener('click', async function() {
+      var originalEmpId = document.getElementById('editOriginalEmpId').value;
+      var teacher = {
+        name:          document.getElementById('editName').value.trim(),
+        fname:         document.getElementById('editFname').value.trim()    || null,
+        empId:         document.getElementById('editEmpId').value.trim(),
+        dob:           document.getElementById('editDob').value             || null,
+        address:       document.getElementById('editAddress').value.trim()  || null,
+        phone:         document.getElementById('editPhone').value.trim()    || null,
+        email:         document.getElementById('editEmail').value.trim()    || null,
+        class_x:       null,
+        class_xii:     null,
+        aadhar:        document.getElementById('editAadhar').value.trim()   || null,
+        education:     document.getElementById('editEducation').value       || null,
+        department:    document.getElementById('editDepartment').value,
+        staffType:     document.getElementById('editStaffType').value       || 'Teaching Staff',
+        gender:        document.getElementById('editGender').value          || null,
+        maritalStatus: document.getElementById('editMaritalStatus').value   || null
+      };
+
+      if (!teacher.name || !teacher.empId || !teacher.department) {
+        document.getElementById('editMessage').innerHTML =
+          '<div class="alert alert-danger">Name, Employee ID and Department are required.</div>';
+        return;
+      }
+
+      try {
+        var res  = await fetch(window.TAPI + '/teachers/' + encodeURIComponent(originalEmpId), {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(teacher)
+        });
+        var data = await res.json();
+        if (data.success) {
+        // Force close modal and remove backdrop to prevent freeze
+        var modalEl = document.getElementById('editTeacherModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+        document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+
+        document.getElementById('tableMessage').innerHTML =
+          '<div class="alert alert-success alert-dismissible">✅ Teacher updated successfully.' +
+          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        setTimeout(function() { loadTeachers(); }, 300);
+        } else {
+          document.getElementById('editMessage').innerHTML =
+            '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('editMessage').innerHTML =
+          '<div class="alert alert-danger">❌ ' + err.message + '</div>';
+      }
+    });
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+    document.addEventListener('click', async function(e) {
+      var btn = e.target.closest('.remove-teacher');
+      if (!btn) return;
+
+      var empId = btn.dataset.empid;
+      const ok = await umsConfirmDelete('Teacher ' + empId);
+      if (!ok) return;
+
+      try {
+        var res  = await fetch(window.TAPI + '/teachers/' + encodeURIComponent(empId), { method: 'DELETE' });
+        var data = await res.json();
+        if (data.success) {
+          document.getElementById('tableMessage').innerHTML =
+            '<div class="alert alert-success alert-dismissible">✅ Teacher deleted.' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+          loadTeachers();
+        } else {
+          alert('Delete failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch(err) { alert('Delete failed: ' + err.message); }
+    });
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+    document.getElementById('logoutButton').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('umsLoggedIn');
+      window.location.href = 'index.html';
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function() { loadTeachers(); });
+  </script>
+</body>
+</html>

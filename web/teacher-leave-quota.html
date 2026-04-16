@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher Leave Quota — UMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --acc:      #7c3aed;
+      --acc-soft: rgba(124,58,237,0.18);
+      --acc-bdr:  rgba(167,139,250,0.35);
+      --acc-glow: rgba(124,58,237,0.4);
+      --card-bg:  rgba(15,10,40,0.85);
+      --txt:      #e2e8f0;
+      --muted:    #94a3b8;
+    }
+
+    .search-dropdown-wrapper { position: relative; }
+    .search-dropdown-list {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: #1e1b4b; border: 1px solid var(--acc-bdr);
+      border-radius: 0 0 8px 8px; max-height: 220px;
+      overflow-y: auto; z-index: 9999; display: none;
+    }
+    .dd-item {
+      padding: .55rem 1rem; cursor: pointer; font-size: .9rem;
+      color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,.06);
+      transition: background .15s;
+    }
+    .dd-item:hover { background: rgba(124,58,237,.3); color: #f0abfc; }
+    .dd-no-result { padding: .55rem 1rem; color: var(--muted); font-style: italic; font-size: .85rem; }
+
+    .teacher-info-box {
+      background: var(--acc-soft); border: 1px solid var(--acc-bdr);
+      border-radius: 10px; padding: .85rem 1.2rem; display: none;
+    }
+    .info-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-weight: 600; }
+    .info-value { color: #e9d5ff; font-weight: 700; font-size: .95rem; }
+
+    .leave-row {
+      background: var(--card-bg); border: 1px solid var(--acc-bdr);
+      border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: .75rem;
+      transition: box-shadow .2s;
+    }
+    .leave-row:hover { box-shadow: 0 0 14px var(--acc-glow); }
+    .leave-row.custom-row { border-color: rgba(124,58,237,.6); }
+    .leave-row.global-row { border-color: rgba(148,163,184,.2); }
+
+    .leave-type-name { font-weight: 700; font-size: 1rem; color: #f0abfc; }
+    .leave-type-meta { font-size: .75rem; color: var(--muted); margin-top: .1rem; }
+
+    .badge-custom  { background: rgba(124,58,237,.25); color: #c084fc; border: 1px solid rgba(124,58,237,.4); border-radius: 20px; padding: .15rem .65rem; font-size: .7rem; font-weight: 700; }
+    .badge-global  { background: rgba(148,163,184,.12); color: #94a3b8; border: 1px solid rgba(148,163,184,.25); border-radius: 20px; padding: .15rem .65rem; font-size: .7rem; }
+    .badge-special { background: rgba(236,72,153,.2); color: #f9a8d4; border: 1px solid rgba(236,72,153,.35); border-radius: 20px; padding: .15rem .65rem; font-size: .7rem; font-weight: 700; }
+
+    .leave-row input[type="number"], .leave-row input[type="text"] {
+      background: rgba(255,255,255,.06); border: 1px solid var(--acc-bdr); color: #e2e8f0; border-radius: 7px;
+    }
+    .leave-row input:focus {
+      background: rgba(124,58,237,.1); border-color: rgba(167,139,250,.7); color: #e9d5ff; box-shadow: none;
+    }
+
+    .usage-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: .35rem; }
+    .usage-bar-fill { height: 100%; border-radius: 3px; }
+
+    #summarySection .table th { color: #a78bfa !important; font-size: .78rem; text-transform: uppercase; letter-spacing: .6px; }
+    #summarySection .table td { color: #e2e8f0 !important; font-size: .87rem; }
+    #summarySection .table tbody tr { background: rgba(30,27,75,.5) !important; }
+    #summarySection .table tbody tr:hover { background: rgba(124,58,237,.15) !important; }
+
+    .pill-ok     { background: rgba(34,197,94,.15);  color: #4ade80; border: 1px solid rgba(34,197,94,.3);  border-radius: 20px; padding: .12rem .6rem; font-size: .75rem; font-weight: 700; }
+    .pill-warn   { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); border-radius: 20px; padding: .12rem .6rem; font-size: .75rem; font-weight: 700; }
+    .pill-danger { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.3);  border-radius: 20px; padding: .12rem .6rem; font-size: .75rem; font-weight: 700; }
+
+    .btn-acc {
+      background: linear-gradient(135deg,#7c3aed,#5b21b6); border: none;
+      color: #fff; font-weight: 700; border-radius: 9px;
+      box-shadow: 0 4px 14px rgba(124,58,237,.4);
+      transition: box-shadow .2s, transform .15s;
+    }
+    .btn-acc:hover { box-shadow: 0 6px 22px rgba(124,58,237,.6); transform: translateY(-1px); color:#fff; }
+    .btn-acc:disabled { opacity: .6; transform: none; }
+
+    .btn-add-custom {
+      background: rgba(236,72,153,.15); border: 1px solid rgba(236,72,153,.4);
+      color: #f9a8d4; border-radius: 9px; font-weight: 600; font-size: .88rem;
+      transition: background .2s;
+    }
+    .btn-add-custom:hover { background: rgba(236,72,153,.28); color: #fbcfe8; }
+
+    .tab-btn {
+      background: transparent; border: 1px solid var(--acc-bdr);
+      border-radius: 8px; color: var(--muted); padding: .38rem 1rem;
+      font-size: .85rem; cursor: pointer; transition: all .2s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: var(--acc-soft); border-color: rgba(167,139,250,.6); color: #f0abfc;
+    }
+
+    .year-pill {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: var(--acc-soft); border: 1px solid var(--acc-bdr);
+      border-radius: 20px; padding: .28rem .9rem; color: #e9d5ff; font-size: .88rem;
+    }
+    .year-pill select { background: transparent; border: none; color: #e9d5ff; font-size: .88rem; outline: none; cursor: pointer; }
+    .year-pill select option { background: #1e1b4b; }
+
+    .modal-content { background: #0f0a28; border: 1px solid var(--acc-bdr); color: #e2e8f0; }
+    .modal-header  { border-bottom: 1px solid var(--acc-bdr); }
+    .modal-footer  { border-top: 1px solid var(--acc-bdr); }
+    .modal .form-label { color: #c4b5fd; font-weight: 600; font-size: .88rem; }
+    .modal .form-control, .modal .form-select {
+      background: rgba(255,255,255,.06); border: 1px solid var(--acc-bdr); color: #e2e8f0; border-radius: 8px;
+    }
+    .modal .form-control:focus, .modal .form-select:focus {
+      background: rgba(124,58,237,.1); border-color: rgba(167,139,250,.7); color: #e9d5ff; box-shadow: none;
+    }
+    .modal .form-control::placeholder { color: #64748b; }
+    .modal select option { background: #1e1b4b; }
+
+    #pageMsg { min-height: 1px; }
+    .remove-custom-row { background: transparent; border: none; color: #f87171; font-size: 1rem; cursor: pointer; opacity: .7; transition: opacity .2s; padding: 0 4px; }
+    .remove-custom-row:hover { opacity: 1; }
+    .quick-pick { font-size: .78rem; border-color: rgba(255,255,255,.2); color: #e2e8f0; }
+    .quick-pick:hover, .quick-pick.selected { background: rgba(124,58,237,.3); border-color: #a78bfa; color: #f0abfc; }
+
+    .elig-badge {
+      font-size: .68rem; padding: .1rem .5rem; border-radius: 10px;
+      border: 1px solid; font-weight: 600;
+    }
+    .elig-female   { background: rgba(236,72,153,.15); color: #f9a8d4; border-color: rgba(236,72,153,.4); }
+    .elig-married  { background: rgba(251,191,36,.12); color: #fbbf24; border-color: rgba(251,191,36,.35); }
+    .elig-all      { background: rgba(34,197,94,.12);  color: #4ade80; border-color: rgba(34,197,94,.3); }
+    .elig-senior   { background: rgba(96,165,250,.12); color: #93c5fd; border-color: rgba(96,165,250,.3); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link active" href="teacher-leave-quota.html">Leave Quota</a></li>
+          <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="logoutButton">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-4 py-4">
+
+    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+      <div>
+        <h4 class="mb-0" style="color:#e9d5ff; font-weight:800;">👤 Teacher Leave Quota</h4>
+        <p class="mb-0 text-muted small mt-1">
+          Set per-teacher leave allocations. Add special leaves (Earned, Maternity, Child Care etc.) per teacher.
+        </p>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+        <div class="year-pill">📅 <select id="yearSelect"></select></div>
+        <button class="tab-btn active" id="tabEdit">✏️ Edit Quotas</button>
+        <button class="tab-btn" id="tabSummary">📊 Summary</button>
+      </div>
+    </div>
+
+    <!-- Teacher selector -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-5">
+        <label class="form-label text-muted small text-uppercase" style="letter-spacing:.7px;">
+          Select Teacher <span class="text-muted" style="font-size:.7rem;">(type name or ID)</span>
+        </label>
+        <div class="search-dropdown-wrapper">
+          <input type="text" class="form-control" id="teacherSearch"
+                 placeholder="Type name or ID to search…" autocomplete="off">
+          <div class="search-dropdown-list" id="teacherDropdownList"></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted small text-uppercase" style="letter-spacing:.7px;">Teacher ID</label>
+        <input type="text" class="form-control" id="teacherId"
+               placeholder="Or type ID directly here" style="background:rgba(255,255,255,.06);border:1px solid var(--acc-bdr);color:#e2e8f0;">
+      </div>
+      <div class="col-md-4 d-flex align-items-end gap-2">
+        <button class="btn btn-acc px-4" id="loadBtn">🔍 Load Quotas</button>
+        <button class="btn btn-outline-secondary" id="clearBtn2">✖ Clear</button>
+      </div>
+    </div>
+
+    <!-- Teacher info box -->
+    <div class="teacher-info-box mb-4" id="teacherInfoBox">
+      <div class="row">
+        <div class="col-md-4"><div class="info-label">Name</div><div class="info-value" id="infoName">—</div></div>
+        <div class="col-md-4"><div class="info-label">Department</div><div class="info-value" id="infoDept">—</div></div>
+        <div class="col-md-4"><div class="info-label">Employee ID</div><div class="info-value" id="infoEmpId">—</div></div>
+      </div>
+    </div>
+
+    <div id="pageMsg" class="mb-3"></div>
+
+    <div id="spinner" class="text-center py-4" style="display:none; color:var(--muted);">
+      <div class="spinner-border" style="color:#7c3aed;" role="status"></div>
+      <div class="mt-2 small">Loading…</div>
+    </div>
+
+    <!-- EDIT VIEW -->
+    <div id="editSection" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <p class="mb-0 text-muted small">
+          Global leave types are shown below. Click
+          <strong style="color:#f9a8d4;">➕ Add Special Leave</strong>
+          to add Earned Leave, Maternity, Child Care etc. for this teacher only.
+        </p>
+        <div class="d-flex gap-2">
+          <button class="btn btn-add-custom" id="openAddCustomBtn">➕ Add Special Leave</button>
+          <button class="btn btn-acc" id="saveAllBtn" disabled>💾 Save All</button>
+        </div>
+      </div>
+      <div id="leaveRowsContainer"></div>
+    </div>
+
+    <!-- SUMMARY VIEW -->
+    <div id="summarySection" style="display:none;">
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle" style="background:rgba(15,10,40,.85);">
+          <thead class="table-dark">
+            <tr>
+              <th>Leave Type</th>
+              <th class="text-center">Allocated</th>
+              <th class="text-center">Used</th>
+              <th class="text-center">Remaining</th>
+              <th style="min-width:130px;">Usage</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Type</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="text-center py-5" style="color:var(--muted);">
+      <div style="font-size:3rem; opacity:.25;">👤</div>
+      <p class="mt-2">
+        Select a teacher from the dropdown or type an Employee ID directly,
+        then click <strong>Load Quotas</strong>.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- ADD SPECIAL LEAVE MODAL -->
+  <div class="modal fade" id="addCustomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" style="color:#f0abfc;">
+            ➕ Add Special Leave for
+            <span id="modalTeacherName" style="color:#e9d5ff;">—</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            These leaves are saved only for this teacher. Use quick-select or type a custom name.
+          </p>
+
+          <div class="mb-1">
+            <label class="form-label mb-2">Quick Select</label>
+          </div>
+
+          <div class="mb-2">
+            <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">
+              👩 Female / Married Employees Only
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm quick-pick" data-name="Maternity Leave"  data-days="180" data-elig="female-married">
+                🤱 Maternity (180d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Child Care Leave" data-days="730" data-elig="female-married">
+                👶 Child Care (730d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Adoption Leave"   data-days="180" data-elig="female-married">
+                🏠 Adoption (180d)
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">
+              👨 Male Employees
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm quick-pick" data-name="Paternity Leave" data-days="15" data-elig="male-married">
+                👨‍👧 Paternity (15d)
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">
+              📋 Performance / Service-based
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm quick-pick" data-name="Earned Leave"         data-days="30"  data-elig="all">
+                ⭐ Earned Leave (30d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Privilege Leave"      data-days="15"  data-elig="all">
+                🏅 Privilege Leave (15d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Special Casual Leave" data-days="5"   data-elig="all">
+                🎯 Special Casual (5d)
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">
+              🎓 Academic / Long-term
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm quick-pick" data-name="Study Leave"         data-days="30"  data-elig="all">
+                📚 Study (30d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Sabbatical Leave"    data-days="365" data-elig="senior">
+                🎓 Sabbatical (365d)
+              </button>
+              <button type="button" class="btn btn-sm quick-pick" data-name="Extraordinary Leave" data-days="90"  data-elig="all">
+                ⭐ Extraordinary (90d)
+              </button>
+            </div>
+          </div>
+
+          <hr style="border-color:var(--acc-bdr);">
+
+          <div id="eligNote" class="mb-3" style="display:none;">
+            <small class="text-muted">Eligibility: </small>
+            <span id="eligBadge"></span>
+            <small class="text-muted ms-2" id="eligText"></small>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Leave Type Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="customLeaveName"
+                     placeholder="e.g. Earned Leave, Maternity Leave…">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Allocated Days <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="customLeaveDays"
+                     min="0" max="9999" step="0.5" placeholder="e.g. 30">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Year</label>
+              <input type="number" class="form-control" id="customLeaveYear">
+            </div>
+            <div class="col-12">
+              <label class="form-label">
+                Notes <span class="text-muted" style="font-weight:400;">(optional)</span>
+              </label>
+              <input type="text" class="form-control" id="customLeaveNotes"
+                     placeholder="e.g. For female/married employees, carry-forward applicable…">
+            </div>
+          </div>
+
+          <div id="customModalMsg" class="mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-acc" id="saveCustomLeaveBtn">💾 Add This Leave</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+
+  <script>
+    // ── FIX 1: Use window.API to avoid duplicate declaration conflict with script.js ──
+    window.API = 'http://localhost:3001/api';
+
+    let allTeachers     = [];
+    let selectedTeacher = null;
+    let globalTypes     = [];
+    let currentMode     = 'edit';
+
+    // ── Year selector ──────────────────────────────────────────────────────────
+    (function () {
+      const sel = document.getElementById('yearSelect');
+      const now = new Date().getFullYear();
+      for (let y = now + 1; y >= now - 2; y--) {
+        const o = document.createElement('option');
+        o.value = y; o.text = y;
+        if (y === now) o.selected = true;
+        sel.appendChild(o);
+      }
+      document.getElementById('customLeaveYear').value = now;
+    })();
+    const getYear = () => parseInt(document.getElementById('yearSelect').value);
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function showMsg(html, cls) {
+      cls = cls || 'success';
+      document.getElementById('pageMsg').innerHTML =
+        '<div class="alert alert-' + cls + ' alert-dismissible">' + html +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+    function clearMsg() { document.getElementById('pageMsg').innerHTML = ''; }
+    function showEl(id) { document.getElementById(id).style.display = ''; }
+    function hideEl(id) { document.getElementById(id).style.display = 'none'; }
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        const [t, lt] = await Promise.all([
+          fetch(window.API + '/teachers').then(r => r.json()),
+          fetch(window.API + '/leave-types').then(r => r.json())
+        ]);
+        allTeachers = Array.isArray(t)  ? t  : [];
+        globalTypes = Array.isArray(lt) ? lt : [];
+      } catch (e) {
+        showMsg('⚠️ Cannot reach server. Make sure <code>node server.js</code> is running.', 'warning');
+      }
+    }
+
+    // ── Teacher searchable dropdown ────────────────────────────────────────────
+    function renderDropdown(list) {
+      const box = document.getElementById('teacherDropdownList');
+      box.innerHTML = '';
+      if (!list.length) {
+        box.innerHTML = '<div class="dd-no-result">No teachers found</div>';
+        box.style.display = 'block'; return;
+      }
+      list.forEach(function(t) {
+        const d = document.createElement('div');
+        d.className   = 'dd-item';
+        d.textContent = t.name + ' — ' + t.empId + ' (' + (t.department || 'N/A') + ')';
+        d.addEventListener('mousedown', function(e) { e.preventDefault(); pickTeacher(t); });
+        box.appendChild(d);
+      });
+      box.style.display = 'block';
+    }
+
+    function pickTeacher(t) {
+      selectedTeacher = t;
+      document.getElementById('teacherSearch').value  = t.name + ' (' + t.empId + ')';
+      document.getElementById('teacherId').value       = t.empId;
+      document.getElementById('infoName').textContent  = t.name       || '—';
+      document.getElementById('infoDept').textContent  = t.department || '—';
+      document.getElementById('infoEmpId').textContent = t.empId      || '—';
+      document.getElementById('teacherInfoBox').style.display = 'block';
+      document.getElementById('teacherDropdownList').style.display = 'none';
+    }
+
+    async function resolveTeacher() {
+      if (selectedTeacher) return selectedTeacher;
+
+      const typedId = document.getElementById('teacherId').value.trim();
+      if (!typedId) return null;
+
+      const found = allTeachers.find(function(t) { return t.empId === typedId; });
+      if (found) {
+        selectedTeacher = found;
+        document.getElementById('infoName').textContent  = found.name       || '—';
+        document.getElementById('infoDept').textContent  = found.department || '—';
+        document.getElementById('infoEmpId').textContent = found.empId      || '—';
+        document.getElementById('teacherInfoBox').style.display = 'block';
+        return found;
+      }
+
+      try {
+        const res      = await fetch(window.API + '/teachers');
+        const teachers = await res.json();
+        const match    = teachers.find(function(t) { return t.empId === typedId; });
+        if (match) {
+          selectedTeacher = match;
+          document.getElementById('infoName').textContent  = match.name       || '—';
+          document.getElementById('infoDept').textContent  = match.department || '—';
+          document.getElementById('infoEmpId').textContent = match.empId      || '—';
+          document.getElementById('teacherInfoBox').style.display = 'block';
+          return match;
+        }
+      } catch (e) {}
+
+      showMsg('❌ Teacher with ID "<strong>' + typedId + '</strong>" not found.', 'danger');
+      return null;
+    }
+
+    document.getElementById('teacherSearch').addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      selectedTeacher = null;
+      document.getElementById('teacherId').value = '';
+      document.getElementById('teacherInfoBox').style.display = 'none';
+      if (!q) { document.getElementById('teacherDropdownList').style.display = 'none'; return; }
+      renderDropdown(allTeachers.filter(function(t) {
+        return (t.name||'').toLowerCase().includes(q) ||
+               (t.empId||'').toLowerCase().includes(q) ||
+               (t.department||'').toLowerCase().includes(q);
+      }));
+    });
+
+    document.getElementById('teacherSearch').addEventListener('focus', function () {
+      if (!this.value.trim()) renderDropdown(allTeachers);
+    });
+
+    document.getElementById('teacherSearch').addEventListener('blur', function () {
+      setTimeout(function() {
+        document.getElementById('teacherDropdownList').style.display = 'none';
+      }, 160);
+    });
+
+    document.getElementById('teacherId').addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      selectedTeacher = null;
+      document.getElementById('teacherInfoBox').style.display = 'none';
+      if (q) {
+        const found = allTeachers.find(function(t) {
+          return (t.empId||'').toLowerCase() === q;
+        });
+        if (found) {
+          selectedTeacher = found;
+          document.getElementById('teacherSearch').value    = found.name + ' (' + found.empId + ')';
+          document.getElementById('infoName').textContent   = found.name       || '—';
+          document.getElementById('infoDept').textContent   = found.department || '—';
+          document.getElementById('infoEmpId').textContent  = found.empId      || '—';
+          document.getElementById('teacherInfoBox').style.display = 'block';
+        }
+      }
+    });
+
+    // ── Clear ──────────────────────────────────────────────────────────────────
+    function clearTeacher() {
+      selectedTeacher = null;
+      document.getElementById('teacherSearch').value = '';
+      document.getElementById('teacherId').value     = '';
+      document.getElementById('teacherInfoBox').style.display = 'none';
+      hideEl('editSection'); hideEl('summarySection'); showEl('emptyState');
+      clearMsg();
+      document.getElementById('saveAllBtn').disabled = true;
+    }
+    document.getElementById('clearBtn2').addEventListener('click', clearTeacher);
+
+    // ── Load Quotas ────────────────────────────────────────────────────────────
+    async function loadQuotas() {
+      clearMsg();
+      const teacher = await resolveTeacher();
+      if (!teacher) return;
+
+      hideEl('editSection'); hideEl('summarySection'); hideEl('emptyState');
+      showEl('spinner');
+
+      try {
+        const year = getYear();
+        const res  = await fetch(
+          window.API + '/teacher-leave-quota?empId=' + encodeURIComponent(teacher.empId) + '&year=' + year
+        );
+        if (!res.ok) throw new Error('Server returned ' + res.status + '. Restart node server.js.');
+        const saved = await res.json();
+        hideEl('spinner');
+        if (currentMode === 'edit') renderEditRows(saved);
+        else await renderSummary(year);
+      } catch (err) {
+        hideEl('spinner'); showEl('emptyState');
+        showMsg('❌ ' + err.message, 'danger');
+      }
+    }
+
+    // ── Render edit rows ───────────────────────────────────────────────────────
+    function renderEditRows(savedRows) {
+      const container = document.getElementById('leaveRowsContainer');
+      container.innerHTML = '';
+
+      const savedMap = {};
+      savedRows.forEach(function(r) { savedMap[r.leaveTypeName] = r; });
+
+      if (!globalTypes.length) {
+        container.insertAdjacentHTML('beforeend',
+          '<div class="alert alert-warning">No global leave types found. ' +
+          '<a href="leave-types.html" class="alert-link">Add them on the Leave Types page →</a></div>');
+      }
+
+      globalTypes.forEach(function(gt) {
+        const saved     = savedMap[gt.leaveTypeName];
+        const allocated = saved ? parseFloat(saved.allocatedDays) : parseFloat(gt.maxDays);
+        const notes     = saved ? (saved.notes || '') : '';
+        container.appendChild(buildRow({
+          leaveTypeName: gt.leaveTypeName,
+          allocatedDays: allocated,
+          notes:         notes,
+          isSpecial:     false,
+          isOverridden:  !!saved,
+          globalDefault: parseFloat(gt.maxDays)
+        }));
+      });
+
+      const globalNames = globalTypes.map(function(g) { return g.leaveTypeName; });
+      savedRows
+        .filter(function(r) { return !globalNames.includes(r.leaveTypeName); })
+        .forEach(function(r) {
+          container.appendChild(buildRow({
+            leaveTypeName: r.leaveTypeName,
+            allocatedDays: parseFloat(r.allocatedDays),
+            notes:         r.notes || '',
+            isSpecial:     true,
+            isOverridden:  true,
+            globalDefault: null
+          }));
+        });
+
+      document.getElementById('saveAllBtn').disabled = false;
+      showEl('editSection');
+    }
+
+    function buildRow(opts) {
+  const leaveTypeName = opts.leaveTypeName;
+  const allocatedDays = opts.allocatedDays;
+  const notes         = opts.notes;
+  const isSpecial     = opts.isSpecial;
+  const isOverridden  = opts.isOverridden;
+  const globalDefault = opts.globalDefault;
+
+  const div        = document.createElement('div');
+  div.className    = 'leave-row ' + (isSpecial ? 'custom-row' : 'global-row');
+  div.dataset.name = leaveTypeName;
+
+  const badgeHtml = isSpecial
+    ? '<span class="badge-special">⭐ Special</span>'
+    : isOverridden
+      ? '<span class="badge-custom">✦ Overridden</span>'
+      : '<span class="badge-global">⊙ Default</span>';
+
+  const defaultHint = globalDefault !== null
+    ? '<span class="text-muted small ms-2" style="font-size:.73rem;">global: ' + globalDefault + 'd</span>'
+    : '';
+
+  // ✅ Special leaves get Delete, Overridden global leaves get Reset, Default leaves get nothing
+  let actionBtn = '';
+  if (isSpecial) {
+    actionBtn = '<button class="remove-custom-row" title="Delete this special leave" data-name="' + leaveTypeName + '">🗑 Delete</button>';
+  } else if (isOverridden) {
+    actionBtn = '<button class="reset-to-default-row" title="Remove custom quota and reset to global default" data-name="' + leaveTypeName + '" data-default="' + globalDefault + '" style="background:transparent;border:none;color:#f87171;font-size:.8rem;cursor:pointer;opacity:.8;padding:0 4px;">↩ Reset to Default</button>';
+  }
+
+  div.innerHTML =
+    '<div class="d-flex align-items-start gap-3 flex-wrap">' +
+      '<div style="min-width:200px; flex:1;">' +
+        '<div class="d-flex align-items-center gap-2 flex-wrap">' +
+          '<span class="leave-type-name">' + leaveTypeName + '</span>' +
+          badgeHtml + ' ' + actionBtn +
+        '</div>' +
+        (defaultHint ? '<div class="leave-type-meta">' + defaultHint + '</div>' : '') +
+      '</div>' +
+      '<div style="min-width:140px;">' +
+        '<label class="form-label mb-1" style="font-size:.78rem;color:var(--muted);">Allocated Days</label>' +
+        '<input type="number" class="form-control form-control-sm allocated-input" min="0" max="9999" step="0.5" value="' + allocatedDays + '">' +
+      '</div>' +
+      '<div style="min-width:240px; flex:2;">' +
+        '<label class="form-label mb-1" style="font-size:.78rem;color:var(--muted);">Notes</label>' +
+        '<input type="text" class="form-control form-control-sm notes-input" value="' + notes + '" placeholder="e.g. Female employees only…">' +
+      '</div>' +
+    '</div>';
+  return div;
+}
+
+   document.getElementById('leaveRowsContainer').addEventListener('click', async function (e) {
+  // ── Delete special leave ──────────────────────────────────────────────────
+  const delBtn = e.target.closest('.remove-custom-row');
+  if (delBtn) {
+    if (confirm('Delete "' + delBtn.dataset.name + '" from this teacher\'s quota?')) {
+      delBtn.closest('.leave-row').remove();
+      // Also delete from DB if it exists
+      const teacher = await resolveTeacher();
+      if (teacher) {
+        try {
+          const res = await fetch(window.API + '/teacher-leave-quota?' +
+            'empId=' + encodeURIComponent(teacher.empId) +
+            '&year=' + getYear());
+          const rows = await res.json();
+          const match = rows.find(function(r) { return r.leaveTypeName === delBtn.dataset.name; });
+          if (match) {
+            await fetch(window.API + '/teacher-leave-quota/' + match.id, { method: 'DELETE' });
+            showMsg('✅ "' + delBtn.dataset.name + '" removed from quota.', 'success');
+          }
+        } catch(err) { console.error('Delete quota error:', err); }
+      }
+    }
+    return;
+  }
+
+  // ── Reset overridden global leave to default ──────────────────────────────
+  const resetBtn = e.target.closest('.reset-to-default-row');
+  if (resetBtn) {
+    const name       = resetBtn.dataset.name;
+    const defaultVal = resetBtn.dataset.default;
+    if (confirm('Reset "' + name + '" back to global default (' + defaultVal + ' days)?\nThis will delete the custom quota for this teacher.')) {
+      const teacher = await resolveTeacher();
+      if (teacher) {
+        try {
+          const res  = await fetch(window.API + '/teacher-leave-quota?' +
+            'empId=' + encodeURIComponent(teacher.empId) +
+            '&year=' + getYear());
+          const rows = await res.json();
+          const match = rows.find(function(r) { return r.leaveTypeName === name; });
+          if (match) {
+            await fetch(window.API + '/teacher-leave-quota/' + match.id, { method: 'DELETE' });
+            showMsg('✅ "' + name + '" reset to global default (' + defaultVal + ' days).', 'success');
+            loadQuotas();
+          }
+        } catch(err) {
+          showMsg('❌ Reset failed: ' + err.message, 'danger');
+        }
+      }
+    }
+    return;
+  }
+});
+
+    // ── Save all ───────────────────────────────────────────────────────────────
+    async function saveAll() {
+      const teacher = await resolveTeacher();
+      if (!teacher) return;
+
+      const rows   = document.querySelectorAll('.leave-row');
+      const quotas = [];
+      rows.forEach(function(row) {
+        const name  = row.dataset.name;
+        const days  = parseFloat(row.querySelector('.allocated-input').value);
+        const notes = row.querySelector('.notes-input').value.trim();
+        if (name && !isNaN(days) && days >= 0)
+          quotas.push({ leaveTypeName: name, allocatedDays: days, notes: notes });
+      });
+
+      const btn = document.getElementById('saveAllBtn');
+      btn.disabled = true; btn.textContent = '⏳ Saving…';
+      try {
+        const res  = await fetch(window.API + '/teacher-leave-quota/bulk', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empId: teacher.empId, year: getYear(), quotas: quotas })
+        });
+        const data = await res.json();
+        if (data.success) { showMsg('✅ ' + data.message, 'success'); loadQuotas(); }
+        else showMsg('❌ ' + (data.error || 'Save failed.'), 'danger');
+      } catch (err) {
+        showMsg('❌ ' + err.message, 'danger');
+      } finally {
+        btn.disabled = false; btn.textContent = '💾 Save All';
+      }
+    }
+
+    // ── Summary view ───────────────────────────────────────────────────────────
+    async function renderSummary(year) {
+      const teacher = await resolveTeacher();
+      if (!teacher) return;
+      try {
+        const res  = await fetch(
+          window.API + '/teacher-leave-quota/summary?empId=' + encodeURIComponent(teacher.empId) + '&year=' + year
+        );
+        if (!res.ok) throw new Error('Server error ' + res.status);
+        const data  = await res.json();
+        const tbody = document.getElementById('summaryBody');
+        tbody.innerHTML = '';
+        data.summary.forEach(function(row) {
+          const pct      = row.allocatedDays > 0 ? Math.min(100, Math.round((row.usedDays / row.allocatedDays) * 100)) : 0;
+          const barColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#22c55e';
+          const pill     = row.remainingDays === 0
+            ? '<span class="pill-danger">Exhausted</span>'
+            : row.remainingDays <= 3
+              ? '<span class="pill-warn">Low</span>'
+              : '<span class="pill-ok">OK</span>';
+          const typePill = row.isCustom
+            ? '<span class="badge-special">⭐ Special</span>'
+            : '<span class="badge-global">⊙ Global</span>';
+          const notesHtml = row.notes
+            ? '<div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;">' + row.notes + '</div>' : '';
+          tbody.insertAdjacentHTML('beforeend',
+            '<tr>' +
+              '<td><span style="font-weight:600;color:#f0abfc;">' + row.leaveTypeName + '</span>' + notesHtml + '</td>' +
+              '<td class="text-center">' + row.allocatedDays + '</td>' +
+              '<td class="text-center">' + row.usedDays + '</td>' +
+              '<td class="text-center"><strong>' + row.remainingDays + '</strong></td>' +
+              '<td>' +
+                '<div class="usage-bar"><div class="usage-bar-fill" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
+                '<div style="font-size:.7rem;color:var(--muted);margin-top:.2rem;">' + pct + '% used</div>' +
+              '</td>' +
+              '<td class="text-center">' + pill + '</td>' +
+              '<td class="text-center">' + typePill + '</td>' +
+            '</tr>');
+        });
+        if (!data.summary.length)
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No quotas saved yet. Go to Edit Quotas tab.</td></tr>';
+        showEl('summarySection');
+      } catch (err) { showMsg('❌ ' + err.message, 'danger'); }
+    }
+
+    // ── Add Special Leave modal ────────────────────────────────────────────────
+    document.getElementById('openAddCustomBtn').addEventListener('click', function () {
+      document.getElementById('modalTeacherName').textContent =
+        selectedTeacher ? selectedTeacher.name : (document.getElementById('teacherId').value || '—');
+      document.getElementById('customLeaveName').value  = '';
+      document.getElementById('customLeaveDays').value  = '';
+      document.getElementById('customLeaveNotes').value = '';
+      document.getElementById('customLeaveYear').value  = getYear();
+      document.getElementById('customModalMsg').innerHTML = '';
+      document.getElementById('eligNote').style.display = 'none';
+      document.querySelectorAll('.quick-pick').forEach(function(b) { b.classList.remove('selected'); });
+      new bootstrap.Modal(document.getElementById('addCustomModal')).show();
+    });
+
+    const eligInfo = {
+      'female-married': {
+        badge: '<span class="elig-badge elig-female">👩 Female</span> <span class="elig-badge elig-married">💍 Married</span>',
+        text:  'Only for female/married employees'
+      },
+      'male-married': {
+        badge: '<span class="elig-badge elig-married">👨 Male / Married</span>',
+        text:  'Only for married male employees'
+      },
+      'all': {
+        badge: '<span class="elig-badge elig-all">✅ All Employees</span>',
+        text:  'Available for all employees'
+      },
+      'senior': {
+        badge: '<span class="elig-badge elig-senior">🎓 Senior Staff</span>',
+        text:  'For senior/long-service employees'
+      }
+    };
+
+    document.querySelectorAll('.quick-pick').forEach(function(btn) {
+      btn.addEventListener('click', function () {
+        document.getElementById('customLeaveName').value = this.dataset.name;
+        document.getElementById('customLeaveDays').value = this.dataset.days;
+        document.querySelectorAll('.quick-pick').forEach(function(b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+
+        const elig = this.dataset.elig;
+        if (elig && eligInfo[elig]) {
+          document.getElementById('eligBadge').innerHTML   = eligInfo[elig].badge;
+          document.getElementById('eligText').textContent  = eligInfo[elig].text;
+          document.getElementById('eligNote').style.display = 'block';
+          if (!document.getElementById('customLeaveNotes').value)
+            document.getElementById('customLeaveNotes').value = eligInfo[elig].text;
+        }
+      });
+    });
+
+    document.getElementById('saveCustomLeaveBtn').addEventListener('click', async function () {
+      const teacher = await resolveTeacher();
+      if (!teacher) {
+        document.getElementById('customModalMsg').innerHTML =
+          '<div class="alert alert-danger">No teacher selected. Close this modal and select a teacher first.</div>';
+        return;
+      }
+      const name  = document.getElementById('customLeaveName').value.trim();
+      const days  = parseFloat(document.getElementById('customLeaveDays').value);
+      const notes = document.getElementById('customLeaveNotes').value.trim();
+      const year  = parseInt(document.getElementById('customLeaveYear').value) || getYear();
+
+      if (!name) {
+        document.getElementById('customModalMsg').innerHTML =
+          '<div class="alert alert-danger">Leave name is required.</div>';
+        return;
+      }
+      if (isNaN(days) || days < 0) {
+        document.getElementById('customModalMsg').innerHTML =
+          '<div class="alert alert-danger">Enter valid days (0 or more).</div>';
+        return;
+      }
+
+      this.disabled = true; this.textContent = '⏳ Saving…';
+      try {
+        const res  = await fetch(window.API + '/teacher-leave-quota', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empId: teacher.empId, leaveTypeName: name, allocatedDays: days, year: year, notes: notes })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('addCustomModal')).hide();
+          showMsg('✅ "' + name + '" (' + days + ' days) added for <strong>' + teacher.name + '</strong>.', 'success');
+          loadQuotas();
+        } else {
+          document.getElementById('customModalMsg').innerHTML =
+            '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
+        }
+      } catch (err) {
+        document.getElementById('customModalMsg').innerHTML =
+          '<div class="alert alert-danger">❌ ' + err.message + '</div>';
+      } finally {
+        this.disabled = false; this.textContent = '💾 Add This Leave';
+      }
+    });
+
+    // ── Tab switching ──────────────────────────────────────────────────────────
+    document.getElementById('tabEdit').addEventListener('click', function () {
+      currentMode = 'edit';
+      this.classList.add('active');
+      document.getElementById('tabSummary').classList.remove('active');
+      hideEl('summarySection');
+      if (selectedTeacher || document.getElementById('teacherId').value.trim()) loadQuotas();
+    });
+
+    document.getElementById('tabSummary').addEventListener('click', function () {
+      currentMode = 'summary';
+      this.classList.add('active');
+      document.getElementById('tabEdit').classList.remove('active');
+      hideEl('editSection');
+      document.getElementById('saveAllBtn').disabled = true;
+      if (selectedTeacher || document.getElementById('teacherId').value.trim()) loadQuotas();
+    });
+
+    document.getElementById('loadBtn').addEventListener('click', loadQuotas);
+    document.getElementById('saveAllBtn').addEventListener('click', saveAll);
+    document.getElementById('yearSelect').addEventListener('change', function() {
+      if (selectedTeacher || document.getElementById('teacherId').value.trim()) loadQuotas();
+    });
+
+    document.getElementById('logoutButton').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('umsLoggedIn');
+      window.location.href = 'index.html';
+    });
+
+    // ── FIX 2: Set login session automatically so page works without redirecting ──
+    $(document).ready(function () {
+      sessionStorage.setItem('umsLoggedIn', 'true');
+      init();
+    });
+  </script>
+</body>
+</html>

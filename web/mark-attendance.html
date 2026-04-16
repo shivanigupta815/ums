@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mark Attendance — UMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Calendar grid ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-header {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 0;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+    }
+    .cal-day {
+      border-radius: 8px;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 0.78rem;
+      min-height: 52px;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: all 0.15s;
+      position: relative;
+    }
+    .cal-day:hover { border-color: #a78bfa; z-index:1; }
+    .cal-day.empty { background: transparent; border-color: transparent; cursor: default; }
+    .cal-day.sunday { background: rgba(148,163,184,0.1); }
+    .cal-day.holiday { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.4); }
+    .cal-day.present { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); }
+    .cal-day.absent  { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.4); }
+    .cal-day .day-num { font-weight: 700; font-size: 0.88rem; display: block; }
+    .cal-day .day-label {
+      font-size: 0.62rem;
+      margin-top: 2px;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cal-day.present .day-label { color: #6ee7b7; }
+    .cal-day.absent  .day-label { color: #fca5a5; }
+    .cal-day.holiday .day-label { color: #fcd34d; }
+    .cal-day.sunday  .day-label { color: #94a3b8; }
+
+    /* ── Legend ── */
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      display: inline-block; margin-right: 5px;
+    }
+
+    /* ── Holiday list ── */
+    .holiday-chip {
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.35);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      color: #fcd34d;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 3px;
+    }
+    .holiday-chip .del-btn {
+      cursor: pointer;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .holiday-chip .del-btn:hover { color: #ef4444; }
+
+    /* ── Stats strip ── */
+    .stat-strip {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+    }
+    .stat-item { text-align: center; }
+    .stat-item .num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-item .lbl { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; }
+
+    /* ── Panel ── */
+    .panel {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1.2rem;
+    }
+    .panel-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #f0abfc;
+      margin-bottom: 0.8rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Month nav ── */
+    .month-nav { display: flex; align-items: center; gap: 0.5rem; }
+    .month-nav .month-label {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #e9d5ff;
+      min-width: 130px;
+      text-align: center;
+    }
+
+    #attendanceMsg { border-radius: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Apply Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
+          <li class="nav-item"><a class="nav-link active" href="mark-attendance.html">Mark Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance Report</a></li>
+          <li class="nav-item"><a class="nav-link" href="exam-details.html">Examination</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="logoutButton">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <main class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h4 class="mb-0">📅 Mark Teacher Attendance</h4>
+        <p class="text-muted small mb-0">Mark daily presence/absence. Sundays &amp; holidays auto-detected.</p>
+      </div>
+    </div>
+
+    <!-- ── Top controls ── -->
+    <div class="row g-3 mb-4">
+
+      <!-- Teacher selector -->
+      <div class="col-md-4">
+        <div class="panel">
+          <div class="panel-title">👤 Select Teacher</div>
+          <input type="text" class="form-control mb-2" id="teacherSearchAtt"
+                 placeholder="Type name or ID…" autocomplete="off">
+          <div id="teacherDropAtt" style="
+            display:none; background:#1e1b4b; border:1px solid rgba(167,139,250,0.4);
+            border-radius:8px; max-height:180px; overflow-y:auto; z-index:999;">
+          </div>
+          <!-- Selected teacher info -->
+          <div id="selTeacherInfo" style="display:none; margin-top:0.6rem;">
+            <div class="d-flex align-items-center gap-2">
+              <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);
+                          width:36px;height:36px;border-radius:50%;
+                          display:flex;align-items:center;justify-content:center;
+                          font-weight:800;color:#fff;font-size:1rem;" id="teacherAvatar">T</div>
+              <div>
+                <div style="font-weight:700;color:#e9d5ff;" id="selTeacherName">—</div>
+                <div style="font-size:0.78rem;color:#94a3b8;" id="selTeacherDept">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Year + Month selector -->
+      <div class="col-md-4">
+        <div class="panel">
+          <div class="panel-title">📆 Year &amp; Month</div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small text-muted">Year</label>
+              <select class="form-select" id="attYear"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-muted">Month</label>
+              <select class="form-select" id="attMonth">
+                <option value="0">January</option><option value="1">February</option>
+                <option value="2">March</option><option value="3">April</option>
+                <option value="4">May</option><option value="5">June</option>
+                <option value="6">July</option><option value="7">August</option>
+                <option value="8">September</option><option value="9">October</option>
+                <option value="10">November</option><option value="11">December</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-2 w-100" id="loadCalBtn">Load Calendar</button>
+        </div>
+      </div>
+
+      <!-- Year stats -->
+      <div class="col-md-4">
+        <div class="panel h-100">
+          <div class="panel-title">📊 Year Stats (Auto-calculated)</div>
+          <div class="row g-2" id="yearStatsRow">
+            <div class="col-4 stat-item">
+              <div class="num text-info" id="statTotalDays">—</div>
+              <div class="lbl">Total Days</div>
+            </div>
+            <div class="col-4 stat-item">
+              <div class="num text-warning" id="statSundays">—</div>
+              <div class="lbl">Sundays</div>
+            </div>
+            <div class="col-4 stat-item">
+              <div class="num" style="color:#fcd34d;" id="statHolidays">—</div>
+              <div class="lbl">Holidays</div>
+            </div>
+            <div class="col-4 stat-item mt-2">
+              <div class="num text-success" id="statWorkingDays">—</div>
+              <div class="lbl">Working Days</div>
+            </div>
+            <div class="col-4 stat-item mt-2">
+              <div class="num text-danger" id="statAbsent">—</div>
+              <div class="lbl">Absent</div>
+            </div>
+            <div class="col-4 stat-item mt-2">
+              <div class="num" style="color:#a78bfa;" id="statPct">—</div>
+              <div class="lbl">Attendance %</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div id="attendanceMsg" class="mb-3 alert"></div>
+
+    <!-- ── Calendar + Holidays side by side ── -->
+    <div class="row g-3">
+
+      <!-- Calendar -->
+      <div class="col-lg-8">
+        <div class="panel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="month-nav">
+              <button class="btn btn-sm btn-outline-secondary" id="prevMonthBtn">‹</button>
+              <span class="month-label" id="calMonthLabel">—</span>
+              <button class="btn btn-sm btn-outline-secondary" id="nextMonthBtn">›</button>
+            </div>
+            <!-- Legend -->
+            <div class="d-flex gap-3 flex-wrap" style="font-size:0.78rem;">
+              <span><span class="legend-dot" style="background:#10b981;"></span>Present</span>
+              <span><span class="legend-dot" style="background:#ef4444;"></span>Absent</span>
+              <span><span class="legend-dot" style="background:#f59e0b;"></span>Holiday</span>
+              <span><span class="legend-dot" style="background:#475569;"></span>Sunday</span>
+            </div>
+          </div>
+
+          <!-- Day headers -->
+          <div class="cal-grid mb-1">
+            <div class="cal-header">Sun</div>
+            <div class="cal-header">Mon</div>
+            <div class="cal-header">Tue</div>
+            <div class="cal-header">Wed</div>
+            <div class="cal-header">Thu</div>
+            <div class="cal-header">Fri</div>
+            <div class="cal-header">Sat</div>
+          </div>
+
+          <!-- Calendar days rendered by JS -->
+          <div class="cal-grid" id="calGrid"></div>
+
+          <div class="mt-3 d-flex gap-2 flex-wrap">
+            <button class="btn btn-success btn-sm" id="markAllPresentBtn">✅ Mark All Working Days Present</button>
+            <button class="btn btn-danger btn-sm" id="markAllAbsentBtn">❌ Mark All Absent</button>
+            <button class="btn btn-primary btn-sm" id="saveAttendanceBtn">💾 Save Month</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Holidays panel -->
+      <div class="col-lg-4">
+        <div class="panel">
+          <div class="panel-title">🎉 Holidays &amp; Festivals</div>
+
+          <!-- Add holiday form -->
+          <div class="mb-3">
+            <input type="text" class="form-control form-control-sm mb-2"
+                   id="holidayName" placeholder="Holiday name e.g. Diwali">
+            <input type="date" class="form-control form-control-sm mb-2" id="holidayDate">
+            <select class="form-select form-select-sm mb-2" id="holidayType">
+              <option value="National">National Holiday</option>
+              <option value="Festival">Festival Holiday</option>
+              <option value="Regional">Regional Holiday</option>
+              <option value="Other">Other</option>
+            </select>
+            <button class="btn btn-warning btn-sm w-100" id="addHolidayBtn">+ Add Holiday</button>
+          </div>
+
+          <!-- Holiday list -->
+          <div id="holidayList">
+            <div class="text-muted small text-center py-2">Loading holidays...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    const API_BASE = 'http://localhost:3001/api';
+
+    let allTeachersAtt = [];
+    let selectedEmpId  = null;
+    let selectedName   = null;
+    let currentYear    = new Date().getFullYear();
+    let currentMonth   = new Date().getMonth(); // 0-indexed
+    let allHolidays    = []; // [{holidayDate:'YYYY-MM-DD', ...}]
+    let attendanceMap  = {}; // {'YYYY-MM-DD': 'Present'|'Absent'}
+
+    // ── Utility ──────────────────────────────────────────────────────────────
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function toDateStr(y, m, d) {
+      return `${y}-${pad(m + 1)}-${pad(d)}`;
+    }
+
+    function isLeapYear(y) {
+      return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    }
+
+    function daysInYear(y) {
+      return isLeapYear(y) ? 366 : 365;
+    }
+
+    function sundaysInYear(y) {
+      let count = 0;
+      for (let m = 0; m < 12; m++) {
+        const days = new Date(y, m + 1, 0).getDate();
+        for (let d = 1; d <= days; d++) {
+          if (new Date(y, m, d).getDay() === 0) count++;
+        }
+      }
+      return count;
+    }
+
+    function holidaysInYear(y) {
+      return allHolidays.filter(h => h.holidayDate && h.holidayDate.startsWith(y + '-')).length;
+    }
+
+    function showMsg(html, type) {
+      const el = $('#attendanceMsg');
+      el.attr('class', 'mb-3 alert alert-' + (type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'));
+      el.html(html).show();
+      if (type === 'success') setTimeout(() => el.fadeOut(), 3500);
+    }
+
+    // ── Year dropdown ─────────────────────────────────────────────────────────
+
+    function populateYears() {
+      const sel = document.getElementById('attYear');
+      sel.innerHTML = '';
+      const thisYear = new Date().getFullYear();
+      for (let y = thisYear + 1; y >= thisYear - 5; y--) {
+        const opt   = document.createElement('option');
+        opt.value   = y;
+        opt.text    = y;
+        if (y === thisYear) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    // ── Teacher search ────────────────────────────────────────────────────────
+
+    async function loadTeachersAtt() {
+      try {
+        const res      = await fetch(API_BASE + '/teachers');
+        allTeachersAtt = await res.json();
+      } catch (e) { console.error(e); }
+    }
+
+    function renderTeacherDrop(list) {
+      const box = document.getElementById('teacherDropAtt');
+      box.innerHTML = '';
+      if (!list.length) {
+        box.innerHTML = '<div style="padding:8px 12px;color:#94a3b8;font-size:.85rem;">No teachers found</div>';
+        box.style.display = 'block';
+        return;
+      }
+      list.forEach(t => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:.88rem;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,.06);';
+        div.textContent   = `${t.name} — ${t.empId}`;
+        div.onmouseover   = () => div.style.background = 'rgba(124,58,237,.3)';
+        div.onmouseout    = () => div.style.background = '';
+        div.onmousedown   = (e) => {
+          e.preventDefault();
+          selectTeacherAtt(t);
+        };
+        box.appendChild(div);
+      });
+      box.style.display = 'block';
+    }
+
+    function selectTeacherAtt(t) {
+      selectedEmpId = t.empId;
+      selectedName  = t.name;
+      document.getElementById('teacherSearchAtt').value = `${t.name} (${t.empId})`;
+      document.getElementById('teacherDropAtt').style.display = 'none';
+      document.getElementById('selTeacherName').textContent = t.name;
+      document.getElementById('selTeacherDept').textContent = t.department || '—';
+      document.getElementById('teacherAvatar').textContent  = t.name.charAt(0).toUpperCase();
+      document.getElementById('selTeacherInfo').style.display = 'block';
+      updateYearStats();
+    }
+
+    document.getElementById('teacherSearchAtt').addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      selectedEmpId = null;
+      document.getElementById('selTeacherInfo').style.display = 'none';
+      if (!q) { document.getElementById('teacherDropAtt').style.display = 'none'; return; }
+      renderTeacherDrop(allTeachersAtt.filter(t =>
+        (t.name || '').toLowerCase().includes(q) || (t.empId || '').toLowerCase().includes(q)
+      ));
+    });
+
+    document.getElementById('teacherSearchAtt').addEventListener('focus', function () {
+      if (!this.value.trim()) renderTeacherDrop(allTeachersAtt);
+    });
+
+    document.getElementById('teacherSearchAtt').addEventListener('blur', function () {
+      setTimeout(() => { document.getElementById('teacherDropAtt').style.display = 'none'; }, 150);
+    });
+
+    // ── Holidays ──────────────────────────────────────────────────────────────
+
+    async function loadHolidays() {
+      try {
+        const res  = await fetch(API_BASE + '/holidays');
+        allHolidays = await res.json();
+        renderHolidayList();
+        renderCalendar();
+        updateYearStats();
+      } catch (e) {
+        allHolidays = [];
+        renderHolidayList();
+      }
+    }
+
+    function renderHolidayList() {
+      const box = document.getElementById('holidayList');
+      if (!allHolidays.length) {
+        box.innerHTML = '<div class="text-muted small text-center py-2">No holidays added yet.</div>';
+        return;
+      }
+      const sorted = [...allHolidays].sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
+      box.innerHTML = sorted.map(h => `
+        <div class="holiday-chip">
+          <span>📅 ${h.holidayDate} — ${h.holidayName}
+            <span style="opacity:.6;font-size:.75rem;">(${h.holidayType})</span>
+          </span>
+          <span class="del-btn" data-id="${h.id}" title="Delete">✕</span>
+        </div>`).join('');
+    }
+
+    document.getElementById('addHolidayBtn').addEventListener('click', async function () {
+      const name = document.getElementById('holidayName').value.trim();
+      const date = document.getElementById('holidayDate').value;
+      const type = document.getElementById('holidayType').value;
+
+      if (!name) { showMsg('❌ Please enter holiday name.', 'error'); return; }
+      if (!date) { showMsg('❌ Please select holiday date.', 'error'); return; }
+
+      try {
+        await fetch(API_BASE + '/holidays', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ holidayName: name, holidayDate: date, holidayType: type })
+        });
+        document.getElementById('holidayName').value = '';
+        document.getElementById('holidayDate').value = '';
+        showMsg('✅ Holiday added!', 'success');
+        await loadHolidays();
+      } catch (e) {
+        showMsg('❌ ' + e.message, 'error');
+      }
+    });
+
+    $(document).on('click', '.del-btn', async function () {
+      const id = $(this).data('id');
+      if (!confirm('Delete this holiday?')) return;
+      try {
+        await fetch(`${API_BASE}/holidays/${id}`, { method: 'DELETE' });
+        await loadHolidays();
+        showMsg('✅ Holiday deleted.', 'success');
+      } catch (e) { showMsg('❌ ' + e.message, 'error'); }
+    });
+
+    // ── Calendar ──────────────────────────────────────────────────────────────
+
+    function isHoliday(dateStr) {
+      return allHolidays.some(h => h.holidayDate === dateStr);
+    }
+
+    function getHolidayName(dateStr) {
+      const h = allHolidays.find(h => h.holidayDate === dateStr);
+      return h ? h.holidayName : '';
+    }
+
+    function renderCalendar() {
+      const y = currentYear, m = currentMonth;
+      document.getElementById('calMonthLabel').textContent =
+        new Date(y, m, 1).toLocaleString('default', { month: 'long' }) + ' ' + y;
+
+      const firstDay  = new Date(y, m, 1).getDay(); // 0=Sun
+      const daysInMon = new Date(y, m + 1, 0).getDate();
+      const grid      = document.getElementById('calGrid');
+      grid.innerHTML  = '';
+
+      // Empty cells before first day
+      for (let i = 0; i < firstDay; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day empty';
+        grid.appendChild(el);
+      }
+
+      for (let d = 1; d <= daysInMon; d++) {
+        const dateStr = toDateStr(y, m, d);
+        const dow     = new Date(y, m, d).getDay();
+        const isSun   = dow === 0;
+        const isHol   = isHoliday(dateStr);
+        const status  = attendanceMap[dateStr];
+
+        const el      = document.createElement('div');
+        el.dataset.date = dateStr;
+
+        if (isSun) {
+          el.className = 'cal-day sunday';
+          el.innerHTML = `<span class="day-num">${d}</span><span class="day-label">Sunday</span>`;
+        } else if (isHol) {
+          el.className = 'cal-day holiday';
+          el.innerHTML = `<span class="day-num">${d}</span>
+                          <span class="day-label">${getHolidayName(dateStr)}</span>`;
+        } else {
+          // Clickable working day
+          el.className = 'cal-day ' + (status === 'Absent' ? 'absent' : status === 'Present' ? 'present' : '');
+          el.innerHTML = `<span class="day-num">${d}</span>
+                          <span class="day-label">${status || 'Click to mark'}</span>`;
+          el.addEventListener('click', function () {
+            toggleAttendance(dateStr, el);
+          });
+        }
+
+        grid.appendChild(el);
+      }
+    }
+
+    function toggleAttendance(dateStr, el) {
+      const cur = attendanceMap[dateStr];
+      if (!cur || cur === 'Absent') {
+        attendanceMap[dateStr] = 'Present';
+        el.className = 'cal-day present';
+      } else {
+        attendanceMap[dateStr] = 'Absent';
+        el.className = 'cal-day absent';
+      }
+      el.querySelector('.day-label').textContent = attendanceMap[dateStr];
+      updateYearStats();
+    }
+
+    // ── Load existing attendance for month ────────────────────────────────────
+
+    async function loadMonthAttendance() {
+      if (!selectedEmpId) return;
+      try {
+        const res  = await fetch(
+          `${API_BASE}/daily-attendance?empId=${encodeURIComponent(selectedEmpId)}&year=${currentYear}&month=${currentMonth + 1}`
+        );
+        const rows = await res.json();
+        rows.forEach(r => {
+          attendanceMap[r.attendanceDate] = r.status;
+        });
+        renderCalendar();
+        updateYearStats();
+      } catch (e) { console.error(e); }
+    }
+
+    // ── Load calendar button ──────────────────────────────────────────────────
+
+    document.getElementById('loadCalBtn').addEventListener('click', async function () {
+      if (!selectedEmpId) {
+        showMsg('❌ Please select a teacher first.', 'error');
+        return;
+      }
+      currentYear  = parseInt(document.getElementById('attYear').value);
+      currentMonth = parseInt(document.getElementById('attMonth').value);
+      attendanceMap = {};
+      await loadMonthAttendance();
+      updateYearStats();
+    });
+
+    // ── Month navigation ──────────────────────────────────────────────────────
+
+    document.getElementById('prevMonthBtn').addEventListener('click', function () {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      document.getElementById('attMonth').value = currentMonth;
+      document.getElementById('attYear').value  = currentYear;
+      attendanceMap = {};
+      loadMonthAttendance();
+    });
+
+    document.getElementById('nextMonthBtn').addEventListener('click', function () {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      document.getElementById('attMonth').value = currentMonth;
+      document.getElementById('attYear').value  = currentYear;
+      attendanceMap = {};
+      loadMonthAttendance();
+    });
+
+    // ── Mark all present / absent ─────────────────────────────────────────────
+
+    document.getElementById('markAllPresentBtn').addEventListener('click', function () {
+      const y = currentYear, m = currentMonth;
+      const days = new Date(y, m + 1, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        const dateStr = toDateStr(y, m, d);
+        const dow     = new Date(y, m, d).getDay();
+        if (dow !== 0 && !isHoliday(dateStr)) {
+          attendanceMap[dateStr] = 'Present';
+        }
+      }
+      renderCalendar();
+      updateYearStats();
+    });
+
+    document.getElementById('markAllAbsentBtn').addEventListener('click', function () {
+      const y = currentYear, m = currentMonth;
+      const days = new Date(y, m + 1, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        const dateStr = toDateStr(y, m, d);
+        const dow     = new Date(y, m, d).getDay();
+        if (dow !== 0 && !isHoliday(dateStr)) {
+          attendanceMap[dateStr] = 'Absent';
+        }
+      }
+      renderCalendar();
+      updateYearStats();
+    });
+
+    // ── Save month attendance ─────────────────────────────────────────────────
+
+    document.getElementById('saveAttendanceBtn').addEventListener('click', async function () {
+      if (!selectedEmpId) {
+        showMsg('❌ Please select a teacher first.', 'error');
+        return;
+      }
+      const records = Object.entries(attendanceMap).map(([date, status]) => ({ empId: selectedEmpId, attendanceDate: date, status }));
+      if (!records.length) {
+        showMsg('❌ No attendance marked yet.', 'error');
+        return;
+      }
+      try {
+        const res  = await fetch(API_BASE + '/daily-attendance', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ records })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showMsg('✅ Attendance saved successfully!', 'success');
+          // Trigger recalculation of summary
+          await recalcSummary();
+        } else {
+          showMsg('❌ ' + (data.error || 'Failed to save.'), 'error');
+        }
+      } catch (e) {
+        showMsg('❌ ' + e.message, 'error');
+      }
+    });
+
+    // ── Recalculate & save year summary ──────────────────────────────────────
+
+    async function recalcSummary() {
+      if (!selectedEmpId) return;
+      const y           = currentYear;
+      const total       = daysInYear(y);
+      const sundays     = sundaysInYear(y);
+      const holidays    = holidaysInYear(y);
+      const workingDays = total - sundays - holidays;
+
+      // Count absences for this teacher this year from daily attendance
+      try {
+        const res    = await fetch(
+          `${API_BASE}/daily-attendance?empId=${encodeURIComponent(selectedEmpId)}&year=${y}`
+        );
+        const rows   = await res.json();
+        const absent = rows.filter(r => r.status === 'Absent').length;
+        const present = workingDays - absent;
+        const pct     = workingDays > 0 ? ((present / workingDays) * 100).toFixed(2) : 0;
+
+        // Save to attendance summary table
+        await fetch(API_BASE + '/attendance', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            empId: selectedEmpId,
+            year:  y,
+            totalDays:    total,
+            sundays:      sundays,
+            holidays:     holidays,
+            workingDays:  workingDays,
+            leavesTaken:  absent,
+            daysPresent:  present,
+            attendancePct: pct
+          })
+        });
+
+        updateYearStats();
+      } catch (e) { console.error(e); }
+    }
+
+    // ── Year stats display ────────────────────────────────────────────────────
+
+    async function updateYearStats() {
+      const y       = currentYear;
+      const total   = daysInYear(y);
+      const sundays = sundaysInYear(y);
+      const hols    = holidaysInYear(y);
+      const working = total - sundays - hols;
+
+      document.getElementById('statTotalDays').textContent  = total;
+      document.getElementById('statSundays').textContent    = sundays;
+      document.getElementById('statHolidays').textContent   = hols;
+      document.getElementById('statWorkingDays').textContent = working;
+
+      if (selectedEmpId) {
+        try {
+          const res  = await fetch(
+            `${API_BASE}/daily-attendance?empId=${encodeURIComponent(selectedEmpId)}&year=${y}`
+          );
+          const rows = await res.json();
+          const absent  = rows.filter(r => r.status === 'Absent').length;
+          const present = working - absent;
+          const pct     = working > 0 ? ((present / working) * 100).toFixed(1) : 0;
+          document.getElementById('statAbsent').textContent = absent;
+          document.getElementById('statPct').textContent    = pct + '%';
+        } catch (e) {
+          document.getElementById('statAbsent').textContent = '—';
+          document.getElementById('statPct').textContent    = '—';
+        }
+      }
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+
+    document.getElementById('logoutButton').addEventListener('click', function (e) {
+      e.preventDefault();
+      sessionStorage.removeItem('umsLoggedIn');
+      window.location.href = 'index.html';
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', async function () {
+      if (!sessionStorage.getItem('umsLoggedIn')) {
+        window.location.href = 'index.html'; return;
+      }
+      populateYears();
+      document.getElementById('attMonth').value = currentMonth;
+      await loadTeachersAtt();
+      await loadHolidays();
+      updateYearStats();
+      renderCalendar();
+    });
+  </script>
+</body>
+</html>

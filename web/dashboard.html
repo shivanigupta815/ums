@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — University Management System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .stat-card {
+      border-radius:14px; padding:1.3rem 1.5rem;
+      border:1px solid rgba(255,255,255,.08);
+      transition:transform .2s, box-shadow .2s;
+      position:relative; overflow:hidden; cursor:pointer;
+    }
+    .stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.3); }
+    .stat-card .card-icon  { font-size:2rem; opacity:.15; position:absolute; right:16px; top:14px; }
+    .stat-card .card-label { font-size:.75rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; margin-bottom:.4rem; }
+    .stat-card .card-value { font-size:2.6rem; font-weight:800; line-height:1; color:#fff; }
+    .stat-card .card-sub   { font-size:.73rem; margin-top:.4rem; opacity:.7; }
+
+    .card-students { background:linear-gradient(135deg,#1e1b4b,#312e81); }
+    .card-teachers { background:linear-gradient(135deg,#064e3b,#065f46); }
+    .card-leaves   { background:linear-gradient(135deg,#7c2d12,#9a3412); }
+    .card-apply    { background:linear-gradient(135deg,#4a1d96,#6d28d9); }
+    .card-quota    { background:linear-gradient(135deg,#134e4a,#0f766e); }
+
+    @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:.8} }
+    .loading-pulse { display:inline-block; width:44px; height:16px; background:rgba(255,255,255,.18); border-radius:4px; animation:pulse 1.2s infinite; vertical-align:middle; }
+
+    .quick-link {
+      display:flex; align-items:center; gap:10px; padding:.65rem 1rem; border-radius:10px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+      color:#e2e8f0; text-decoration:none; font-size:.86rem; font-weight:600;
+      transition:background .15s, transform .12s; margin-bottom:.45rem;
+    }
+    .quick-link:hover { background:rgba(124,58,237,.22); color:#f0abfc; transform:translateX(4px); }
+    .ql-icon { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1rem; background:rgba(255,255,255,.09); flex-shrink:0; }
+
+    .dash-panel { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:1.4rem 1.6rem; }
+    .panel-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#64748b; margin-bottom:1rem; }
+
+    #db-leavesTable td { font-size:.82rem; color:#e2e8f0 !important; background:transparent !important; border-color:rgba(255,255,255,.06) !important; padding:8px 10px; }
+    #db-leavesTable th { font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; color:#64748b !important; background:transparent !important; border-color:rgba(255,255,255,.07) !important; padding:8px 10px; font-weight:600; }
+
+    .badge-pending  { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; border-radius:20px; padding:2px 9px; font-size:.7rem; font-weight:700; }
+    .badge-approved { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; border-radius:20px; padding:2px 9px; font-size:.7rem; font-weight:700; }
+    .badge-rejected { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:20px; padding:2px 9px; font-size:.7rem; font-weight:700; }
+
+    .about-section { border-top:1px solid rgba(255,255,255,.07); padding-top:2rem; margin-top:2rem; }
+    .about-card    { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:1.6rem 2rem; }
+    .dev-avatar    { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#a855f7); display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; color:#fff; flex-shrink:0; }
+    .tech-badge    { background:rgba(124,58,237,.18); border:1px solid rgba(167,139,250,.3); border-radius:20px; padding:3px 10px; font-size:.72rem; color:#c4b5fd; font-weight:600; display:inline-block; margin:2px; }
+
+    #db-serverStatus { font-size:.75rem; padding:3px 10px; border-radius:20px; font-weight:600; }
+    .server-ok  { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .server-err { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="dashboard.html">UMS</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link active" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
+          <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
+          <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
+          <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-leave-quota.html">Leave Quota</a></li>
+          <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
+          <li class="nav-item"><a class="nav-link" href="mark-attendance.html">Mark Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="db-logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-4 py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div>
+        <h3 class="mb-0" style="font-weight:800;color:#e9d5ff;">University Management System</h3>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="text-muted small" id="db-date"></span>
+          <span id="db-serverStatus"></span>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="add-teacher.html" class="btn btn-sm btn-outline-light">+ Add Teacher</a>
+        <a href="add-student.html" class="btn btn-sm btn-outline-light">+ Add Student</a>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-md-4 col-lg">
+        <div class="stat-card card-students" onclick="location.href='student-details.html'">
+          <div class="card-icon">🎓</div>
+          <div class="card-label" style="color:#93c5fd;">Total Students</div>
+          <div class="card-value" id="db-students"><span class="loading-pulse"></span></div>
+          <div class="card-sub" style="color:#93c5fd;">Click to view →</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4 col-lg">
+        <div class="stat-card card-teachers" onclick="location.href='teacher-details.html'">
+          <div class="card-icon">👨‍🏫</div>
+          <div class="card-label" style="color:#6ee7b7;">Total Teachers</div>
+          <div class="card-value" id="db-teachers"><span class="loading-pulse"></span></div>
+          <div class="card-sub" style="color:#6ee7b7;">Click to view →</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4 col-lg">
+        <div class="stat-card card-leaves" onclick="location.href='leave-details.html'">
+          <div class="card-icon">📩</div>
+          <div class="card-label" style="color:#fca5a5;">Pending Leaves</div>
+          <div class="card-value" id="db-pending"><span class="loading-pulse"></span></div>
+          <div class="card-sub" style="color:#fca5a5;">Click to review →</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4 col-lg">
+        <div class="stat-card card-apply" onclick="location.href='apply-leave.html'">
+          <div class="card-icon">✍️</div>
+          <div class="card-label" style="color:#c4b5fd;">Apply Leave</div>
+          <div class="card-value" style="font-size:1.6rem;padding-top:.4rem;">Record</div>
+          <div class="card-sub" style="color:#c4b5fd;">Click to apply →</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4 col-lg">
+        <div class="stat-card card-quota" onclick="location.href='teacher-leave-quota.html'">
+          <div class="card-icon">⚖️</div>
+          <div class="card-label" style="color:#5eead4;">Leave Quota</div>
+          <div class="card-value" style="font-size:1.6rem;padding-top:.4rem;">Manage</div>
+          <div class="card-sub" style="color:#5eead4;">Click to manage →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT LEAVES + QUICK NAV -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="dash-panel h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="panel-title mb-0">📩 Recent Pending Leave Requests</div>
+            <a href="leave-details.html" class="btn btn-sm btn-outline-warning" style="font-size:.75rem;">View All →</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-borderless align-middle mb-0" id="db-leavesTable">
+              <thead>
+                <tr>
+                  <th>Teacher</th>
+                  <th>Leave Type</th>
+                  <th>From</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="db-leavesBody">
+                <tr><td colspan="6" class="text-center py-3" style="color:#64748b;">
+                  <span class="loading-pulse" style="width:120px;height:14px;"></span>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="dash-panel h-100">
+          <div class="panel-title">⚡ Quick Navigation</div>
+          <a href="add-student.html"         class="quick-link"><span class="ql-icon">🎓</span> Add New Student</a>
+          <a href="add-teacher.html"         class="quick-link"><span class="ql-icon">👨‍🏫</span> Add New Teacher</a>
+          <a href="apply-leave.html"         class="quick-link"><span class="ql-icon">✍️</span> Record Leave</a>
+          <a href="leave-details.html"       class="quick-link"><span class="ql-icon">📋</span> Leave Details</a>
+          <a href="mark-attendance.html"     class="quick-link"><span class="ql-icon">📅</span> Mark Attendance</a>
+          <a href="fee-structure.html"       class="quick-link"><span class="ql-icon">💰</span> Fee Structure</a>
+          <a href="teacher-leave-quota.html" class="quick-link"><span class="ql-icon">⚖️</span> Leave Quota</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="about-section">
+      <div class="about-card">
+        <div class="row align-items-start g-4">
+          <div class="col-md-5">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="dev-avatar">SG</div>
+              <div>
+                <div style="font-weight:800;font-size:1.05rem;color:#e9d5ff;">Shivani Gupta</div>
+                <div style="font-size:.78rem;color:#64748b;">Full Stack Developer</div>
+              </div>
+            </div>
+            <div style="font-size:.82rem;color:#94a3b8;margin-bottom:.6rem;">
+              ✉️ <a href="mailto:shivanigupta.4423@gmail.com" style="color:#a78bfa;text-decoration:none;">shivanigupta.4423@gmail.com</a>
+            </div>
+            <div style="font-size:.8rem;color:#64748b;line-height:1.6;">
+              Designed and developed the complete University Management System covering students, teachers, leave management, attendance, fees, and email notifications.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="panel-title">📦 Project Info</div>
+            <table style="font-size:.82rem;width:100%;">
+              <tr><td style="color:#64748b;padding:4px 0;width:42%;">Project</td><td style="color:#e2e8f0;font-weight:600;">UMS v1.0</td></tr>
+              <tr><td style="color:#64748b;padding:4px 0;">Backend</td><td style="color:#e2e8f0;font-weight:600;">Node.js + Express</td></tr>
+              <tr><td style="color:#64748b;padding:4px 0;">Database</td><td style="color:#e2e8f0;font-weight:600;">MySQL</td></tr>
+              <tr><td style="color:#64748b;padding:4px 0;">Frontend</td><td style="color:#e2e8f0;font-weight:600;">HTML + Bootstrap 5</td></tr>
+              <tr><td style="color:#64748b;padding:4px 0;">Email</td><td style="color:#e2e8f0;font-weight:600;">Nodemailer + Gmail</td></tr>
+              <tr><td style="color:#64748b;padding:4px 0;">Auth</td><td style="color:#e2e8f0;font-weight:600;">Session-based</td></tr>
+            </table>
+          </div>
+          <div class="col-md-3">
+            <div class="panel-title">🛠️ Tech Stack</div>
+            <span class="tech-badge">Node.js</span><span class="tech-badge">Express.js</span>
+            <span class="tech-badge">MySQL</span><span class="tech-badge">Bootstrap 5</span>
+            <span class="tech-badge">Nodemailer</span><span class="tech-badge">jQuery</span>
+            <span class="tech-badge">HTML5</span><span class="tech-badge">CSS3</span>
+            <span class="tech-badge">JavaScript</span><span class="tech-badge">REST API</span>
+          </div>
+        </div>
+        <div class="text-center mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,.06);font-size:.73rem;color:#475569;">
+          © 2026 University Management System &nbsp;|&nbsp; Developed by <strong style="color:#a78bfa;">Shivani Gupta</strong>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DASHBOARD — wrapped in IIFE so script.js variables cannot conflict
+  // All element IDs prefixed with "db-" so script.js cannot touch them
+  // ═══════════════════════════════════════════════════════════════════════════
+  (function () {
+    'use strict';
+
+    var DB_API = 'http://localhost:3001/api';
+
+    // ── Date ──────────────────────────────────────────────────────────────────
+    var dateEl = document.getElementById('db-date');
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleString('en-IN', {
+        dateStyle: 'full', timeStyle: 'short'
+      });
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+    var logoutEl = document.getElementById('db-logout');
+    if (logoutEl) {
+      logoutEl.addEventListener('click', function (e) {
+        e.preventDefault();
+        sessionStorage.removeItem('umsLoggedIn');
+        window.location.href = 'index.html';
+      });
+    }
+
+    // ── Set a stat card value safely ──────────────────────────────────────────
+    function setVal(id, value) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    // ── Set server status badge ───────────────────────────────────────────────
+    function setStatus(online) {
+      var el = document.getElementById('db-serverStatus');
+      if (!el) return;
+      el.textContent = online ? '● Server Online' : '● Server Offline';
+      el.className   = online ? 'server-ok' : 'server-err';
+    }
+
+    // ── Main dashboard load ───────────────────────────────────────────────────
+    async function dbLoad() {
+      try {
+        // Fetch teachers, students, and leaves in parallel
+        var results = await Promise.all([
+          fetch(DB_API + '/teachers').then(function(r) { return r.json(); }),
+          fetch(DB_API + '/students').then(function(r) { return r.json(); }),
+          fetch(DB_API + '/teacher-leaves').then(function(r) { return r.json(); })
+        ]);
+
+        setStatus(true);
+
+        var teachers = Array.isArray(results[0]) ? results[0] : [];
+        var students = Array.isArray(results[1]) ? results[1] : [];
+        var leaves   = Array.isArray(results[2]) ? results[2] : [];
+
+        // Unique teachers by empId (handles duplicates in DB)
+        var uniqueTeacherIds = {};
+        teachers.forEach(function(t) {
+          if (t.empId) uniqueTeacherIds[t.empId] = true;
+        });
+
+        setVal('db-students', students.length);
+        setVal('db-teachers', Object.keys(uniqueTeacherIds).length);
+
+        // Pending leaves — status is 'Pending', null, or empty string
+        var pendingLeaves = leaves.filter(function(l) {
+          var s = (l.status || '').trim();
+          return s === 'Pending' || s === '' || s === 'null';
+        });
+
+        setVal('db-pending', pendingLeaves.length);
+
+        // Build teacher name map
+        var nameMap = {};
+        teachers.forEach(function(t) {
+          if (t.empId && !nameMap[t.empId]) nameMap[t.empId] = t.name || t.empId;
+        });
+
+        // Recent pending leaves table — show last 5 (most recent first)
+        var tbody  = document.getElementById('db-leavesBody');
+        if (!tbody) return;
+
+        // Sort by id descending so newest appear first
+        var recent = pendingLeaves.slice().sort(function(a, b) {
+          return (b.id || 0) - (a.id || 0);
+        }).slice(0, 5);
+
+        if (!recent.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center py-3" style="color:#64748b;font-size:.85rem;">' +
+            '✅ No pending leave requests right now.</td></tr>';
+          return;
+        }
+
+        var rows = recent.map(function(l) {
+          var tName = nameMap[l.empId] || l.empId || '—';
+          var from  = l.startDate || l.date || '—';
+          var dur   = (l.duration || '—') + ' day(s)';
+          var ltype = l.leaveType || '—';
+          var empId = l.empId || '—';
+
+          return '<tr>' +
+            '<td>' +
+              '<div style="font-weight:600;color:#e9d5ff;">' + tName + '</div>' +
+              '<div style="font-size:.7rem;color:#475569;">' + empId + '</div>' +
+            '</td>' +
+            '<td>' + ltype + '</td>' +
+            '<td>' + from + '</td>' +
+            '<td>' + dur + '</td>' +
+            '<td><span class="badge-pending">Pending</span></td>' +
+            '<td>' +
+              '<a href="leave-details.html" class="btn btn-sm btn-outline-warning" style="font-size:.7rem;padding:2px 8px;">Review →</a>' +
+            '</td>' +
+          '</tr>';
+        });
+
+        tbody.innerHTML = rows.join('');
+
+      } catch (err) {
+        setStatus(false);
+        setVal('db-students', '—');
+        setVal('db-teachers', '—');
+        setVal('db-pending',  '—');
+
+        var tbody = document.getElementById('db-leavesBody');
+        if (tbody) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;">' +
+            '⚠️ Cannot connect to server. Run <code>node server.js</code> and open via <strong>localhost:3001</strong>.' +
+            '</td></tr>';
+        }
+      }
+    }
+
+    // ── Run after DOM is ready ────────────────────────────────────────────────
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', dbLoad);
+    } else {
+      dbLoad();
+    }
+
+  })();
+  </script>
+</body>
+</html>

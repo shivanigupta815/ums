@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "TeacherLeave",
+            "request": "launch",
+            "mainClass": "university.management.system.TeacherLeave",
+            "projectName": "University Management System_6352561"
+        },
+        {
+            "type": "java",
+            "name": "Login",
+            "request": "launch",
+            "mainClass": "university.management.system.Login",
+            "projectName": "University Management System_6352561"
+        },
+        {
+            "type": "java",
+            "name": "Project",
+            "request": "launch",
+            "mainClass": "university.management.system.Project",
+            "projectName": "University Management System_6352561"
+        },
+        {
+            "type": "java",
+            "name": "AddStudent",
+            "request": "launch",
+            "mainClass": "university.management.system.AddStudent",
+            "projectName": "University Management System_6352561"
+        },
+        {
+            "type": "java",
+            "name": "Splash",
+            "request": "launch",
+            "mainClass": "university.management.system.Splash",
+            "projectName": "University Management System_6352561"
+        },
+        {
+            "type": "java",
+            "name": "Launch University Management System",
+            "request": "launch",
+            "mainClass": "university.management.system.Splash",
+            "projectName": "University Management System",
+            "classPaths": [
+                "${workspaceFolder}/bin",
+                "${workspaceFolder}/lib/Jar/mysql-connector-java-8.0.28.jar",
+                "${workspaceFolder}/lib/Jar/jcalendar-tz-1.3.3-4.jar",
+                "${workspaceFolder}/lib/Jar/rs2xml.jar"
+            ],
+            "preLaunchTask": "Build Java Project"
+        }
+    ]
+}
