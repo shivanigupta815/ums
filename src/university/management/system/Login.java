@@ -12,7 +12,7 @@ public class Login extends JFrame implements ActionListener{
     
     Login () {
         Theme.applyGlobalLookAndFeel();
-        Theme.styleFrame(this, "Login — University Management System");
+        Theme.styleFrame(this, "Login — Teacher Leave Management System");
 
         setLayout(null);
         

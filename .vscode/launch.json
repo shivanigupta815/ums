@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Splash",
+            "request": "launch",
+            "mainClass": "university.management.system.Splash",
+            "projectName": ""
+        },
+        {
+            "type": "java",
             "name": "TeacherLeave",
             "request": "launch",
             "mainClass": "university.management.system.TeacherLeave",

@@ -1,6 +1,5 @@
 node_modules/
 .env
+*.bat
+npm-debug.log
 .DS_Store
-dist/
-nbproject/
-*.class
