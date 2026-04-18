@@ -8,14 +8,16 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
-
 // ── Database ──────────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host: 'localhost', user: 'root', password: 'Shivani@1808',
-  database: 'universitymanagementsystem',
-  waitForConnections: true, connectionLimit: 10
+  host     : 'sql12.freesqldatabase.com',
+  user     : 'sql12823587',
+  password : 'SyGJtHp65h',
+  database : 'sql12823587',
+  port     : 3306,
+  waitForConnections: true,
+  connectionLimit   : 5
 });
-
 async function query(sql, params) {
   params = params || [];
   const result = await pool.execute(sql, params);
