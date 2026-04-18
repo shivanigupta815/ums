@@ -1,10 +1,10 @@
 /**
  * University Management System — Frontend JS
  * All data operations go to the Express API → MySQL
- * API base: http://localhost:3001
+ * API base: https://ums-app1.onrender.com
  */
 
-const API = 'http://localhost:3001/api';
+const API = 'https://ums-app1.onrender.com/api';
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 

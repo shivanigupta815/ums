@@ -88,7 +88,6 @@ public class Login extends JFrame implements ActionListener{
                 
                 if (rs.next()) {
                     setVisible(false);
-                    new Project();
                 } else {
                     JOptionPane.showMessageDialog(this, "Invalid username or password", "Login failed", JOptionPane.ERROR_MESSAGE);
                     // keep login window open for retry
@@ -100,7 +99,6 @@ public class Login extends JFrame implements ActionListener{
 
                 if ("admin".equals(username) && "admin".equals(password)) {
                     setVisible(false);
-                    new Project();
                 }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -108,7 +106,6 @@ public class Login extends JFrame implements ActionListener{
 
                 if ("admin".equals(username) && "admin".equals(password)) {
                     setVisible(false);
-                    new Project();
                 }
             }
         } else if (ae.getSource() == cancel) {

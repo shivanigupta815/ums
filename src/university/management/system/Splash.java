@@ -230,7 +230,7 @@ public class Splash extends JFrame implements Runnable {
             try {
                 if (java.awt.Desktop.isDesktopSupported() &&
                         java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
-                   Desktop.getDesktop().browse(new java.net.URI("http://localhost:3001"));
+                   Desktop.getDesktop().browse(new java.net.URI("https://ums-app1.onrender.com"));
 
                     System.out.println("Web UI opened in default browser: " + webPath);
                     return;

@@ -198,7 +198,7 @@
         }
 
         try {
-          const res  = await fetch('http://localhost:3001/api/teachers', {
+          const res  = await fetch('https://ums-app1.onrender.com/api/teachers', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(teacher)
