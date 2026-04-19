@@ -4,39 +4,65 @@ const mysql      = require('mysql2/promise');
 const cors       = require('cors');
 
 const app  = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
 // ── Database ──────────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host     : 'sql12.freesqldatabase.com',
-  user     : 'sql12823587',
-  password : 'SyGJtHp65h',
-  database : 'sql12823587',
-  port     : 3306,
+  host             : process.env.MYSQL_HOST     || 'sql12.freesqldatabase.com',
+  user             : process.env.MYSQL_USER     || 'sql12823587',
+  password         : process.env.MYSQL_PASSWORD || 'SyGJtHp65h',
+  database         : process.env.MYSQL_DATABASE || 'sql12823587',
+  port             : process.env.MYSQL_PORT     || 3306,
   waitForConnections: true,
-  connectionLimit   : 5
+  connectionLimit  : 5,
+  connectTimeout   : 30000,
+  acquireTimeout   : 30000,
+  // ── Keep-alive for Render free tier ──
+  enableKeepAlive  : true,
+  keepAliveInitialDelay: 10000
 });
+
 async function query(sql, params) {
   params = params || [];
-  const result = await pool.execute(sql, params);
-  return result[0];
+  try {
+    const result = await pool.execute(sql, params);
+    return result[0];
+  } catch (err) {
+    // Reconnect on lost connection
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+      console.log('🔄 DB connection lost, retrying...');
+      const result = await pool.execute(sql, params);
+      return result[0];
+    }
+    throw err;
+  }
 }
+
+// ── Keep-alive ping every 4 minutes (Render free tier sleeps after 5 min) ────
+setInterval(async () => {
+  try {
+    await pool.execute('SELECT 1');
+    console.log('💓 DB keep-alive ping OK');
+  } catch (e) {
+    console.log('⚠️ Keep-alive ping failed:', e.message);
+  }
+}, 4 * 60 * 1000);
 
 app.use(express.static('web'));
 
 // ── Email Configuration ───────────────────────────────────────────────────────
-// To change email in future: update 'user', 'pass', and 'from' only
-const EMAIL_USER = 'shivanigupta18082005@gmail.com'; // ← apni Gmail ID
-const EMAIL_PASS = 'jrbb vtvh twxy hrje';            // ← App Password
+const EMAIL_USER = process.env.EMAIL_USER || 'shivanigupta18082005@gmail.com';
+const EMAIL_PASS = process.env.EMAIL_PASS || 'jrbb vtvh twxy hrje';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: { user: EMAIL_USER, pass: EMAIL_PASS }
 });
 
-// ── Send leave email function ─────────────────────────────────────────────────
+// ── Send leave email ──────────────────────────────────────────────────────────
 async function sendLeaveEmail(toEmail, teacherName, leaveType, startDate, endDate, duration, action) {
   const isApproved = action === 'Approved';
   const emoji      = isApproved ? '✅' : '❌';
@@ -46,135 +72,116 @@ async function sendLeaveEmail(toEmail, teacherName, leaveType, startDate, endDat
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;
-                border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;
-                box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-
-      <!-- Header -->
+                border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
       <div style="background:${color};padding:28px;text-align:center;">
         <div style="font-size:48px;margin-bottom:8px;">${emoji}</div>
-        <h2 style="color:#fff;margin:0;font-size:22px;font-weight:700;">
-          Leave Request ${action}
-        </h2>
+        <h2 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Leave Request ${action}</h2>
       </div>
-
-      <!-- Body -->
       <div style="padding:28px;background:#fff;">
-        <p style="font-size:16px;color:#374151;margin:0 0 20px;">
-          Dear <strong>${teacherName}</strong>,
-        </p>
+        <p style="font-size:16px;color:#374151;margin:0 0 20px;">Dear <strong>${teacherName}</strong>,</p>
         <p style="font-size:15px;color:#374151;margin:0 0 20px;">
-          Your leave request has been
-          <strong style="color:${color};">${action}</strong>
-          by the administration.
+          Your leave request has been <strong style="color:${color};">${action}</strong> by the administration.
         </p>
-
-        <!-- Details table -->
         <div style="background:${bgColor};border-radius:8px;padding:16px;margin-bottom:20px;">
           <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:10px 12px;font-weight:600;color:#6b7280;
-                          font-size:13px;text-transform:uppercase;letter-spacing:.5px;
-                          width:40%;border-bottom:1px solid #e5e7eb;">Leave Type</td>
-              <td style="padding:10px 12px;color:#111827;font-weight:600;
-                          border-bottom:1px solid #e5e7eb;">${leaveType}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 12px;font-weight:600;color:#6b7280;
-                          font-size:13px;text-transform:uppercase;letter-spacing:.5px;
-                          border-bottom:1px solid #e5e7eb;">Start Date</td>
-              <td style="padding:10px 12px;color:#111827;
-                          border-bottom:1px solid #e5e7eb;">${startDate}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 12px;font-weight:600;color:#6b7280;
-                          font-size:13px;text-transform:uppercase;letter-spacing:.5px;
-                          border-bottom:1px solid #e5e7eb;">End Date</td>
-              <td style="padding:10px 12px;color:#111827;
-                          border-bottom:1px solid #e5e7eb;">${endDate}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 12px;font-weight:600;color:#6b7280;
-                          font-size:13px;text-transform:uppercase;letter-spacing:.5px;
-                          border-bottom:1px solid #e5e7eb;">Duration</td>
-              <td style="padding:10px 12px;color:#111827;
-                          border-bottom:1px solid #e5e7eb;">${duration} day(s)</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 12px;font-weight:600;color:#6b7280;
-                          font-size:13px;text-transform:uppercase;letter-spacing:.5px;">Status</td>
-              <td style="padding:10px 12px;">
-                <span style="background:${color};color:#fff;padding:4px 14px;
-                              border-radius:20px;font-size:13px;font-weight:700;">
-                  ${action}
-                </span>
-              </td>
-            </tr>
+            <tr><td style="padding:8px 12px;font-weight:600;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">Leave Type</td><td style="padding:8px 12px;color:#111827;font-weight:600;border-bottom:1px solid #e5e7eb;">${leaveType}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">From</td><td style="padding:8px 12px;color:#111827;border-bottom:1px solid #e5e7eb;">${startDate}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">To</td><td style="padding:8px 12px;color:#111827;border-bottom:1px solid #e5e7eb;">${endDate}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">Duration</td><td style="padding:8px 12px;color:#111827;border-bottom:1px solid #e5e7eb;">${duration} day(s)</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;color:#6b7280;font-size:13px;">Status</td><td style="padding:8px 12px;"><span style="background:${color};color:#fff;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;">${action}</span></td></tr>
           </table>
         </div>
-
         ${isApproved
-          ? `<p style="font-size:14px;color:#374151;background:#f0fdf4;
-                       border-left:4px solid #16a34a;padding:12px;border-radius:4px;">
-               Please ensure all your responsibilities are properly handed over
-               before your leave begins.
-             </p>`
-          : `<p style="font-size:14px;color:#374151;background:#fef2f2;
-                       border-left:4px solid #dc2626;padding:12px;border-radius:4px;">
-               If you have any questions regarding this decision,
-               please contact the administration office.
-             </p>`
-        }
+          ? `<p style="font-size:14px;color:#374151;background:#f0fdf4;border-left:4px solid #16a34a;padding:12px;border-radius:4px;">Please ensure all your responsibilities are properly handed over before your leave begins.</p>`
+          : `<p style="font-size:14px;color:#374151;background:#fef2f2;border-left:4px solid #dc2626;padding:12px;border-radius:4px;">If you have any questions regarding this decision, please contact the administration office.</p>`}
       </div>
-
-      <!-- Footer -->
-      <div style="background:#f8fafc;padding:16px;text-align:center;
-                  border-top:1px solid #e2e8f0;">
-        <p style="margin:0;font-size:12px;color:#9ca3af;">
-          This is an automated email from
-          <strong>University Management System</strong>
-        </p>
-        <p style="margin:4px 0 0;font-size:11px;color:#d1d5db;">
-          © ${new Date().getFullYear()} UMS — Do not reply to this email
-        </p>
+      <div style="background:#f8fafc;padding:16px;text-align:center;border-top:1px solid #e2e8f0;">
+        <p style="margin:0;font-size:12px;color:#9ca3af;">This is an automated email from <strong>University Management System</strong></p>
+        <p style="margin:4px 0 0;font-size:11px;color:#d1d5db;">© ${new Date().getFullYear()} UMS — Do not reply to this email</p>
       </div>
     </div>`;
 
-  await transporter.sendMail({
-    from:    `"UMS System" <${EMAIL_USER}>`,
-    to:      toEmail,
-    subject: subject,
-    html:    html
-  });
-
+  await transporter.sendMail({ from: `"UMS System" <${EMAIL_USER}>`, to: toEmail, subject, html });
   console.log(`📧 Email sent to ${toEmail} — Leave ${action}`);
 }
 
-// ── AUTO-INIT DB ──────────────────────────────────────────────────────────────
+// ── AUTO-INIT DB — creates ALL missing tables and columns ─────────────────────
 async function initDB() {
   try {
+    // 1. teacher_attendance
     await pool.query(`
       CREATE TABLE IF NOT EXISTS teacher_attendance (
-        id INT AUTO_INCREMENT PRIMARY KEY, empId VARCHAR(50) NOT NULL,
-        teacherName VARCHAR(100) DEFAULT NULL, year INT NOT NULL,
-        totalDays INT NOT NULL, sundays INT NOT NULL, workingDays INT NOT NULL,
-        leavesTaken DECIMAL(6,1) NOT NULL DEFAULT 0, daysPresent DECIMAL(6,1) NOT NULL,
-        attendancePct DECIMAL(5,2) NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        empId VARCHAR(50) NOT NULL,
+        teacherName VARCHAR(100) DEFAULT NULL,
+        year INT NOT NULL,
+        totalDays INT NOT NULL DEFAULT 0,
+        sundays INT NOT NULL DEFAULT 0,
+        workingDays INT NOT NULL DEFAULT 0,
+        leavesTaken DECIMAL(6,1) NOT NULL DEFAULT 0,
+        daysPresent DECIMAL(6,1) NOT NULL DEFAULT 0,
+        attendancePct DECIMAL(5,2) NOT NULL DEFAULT 0,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY uq_teacher_year (empId, year)
       )`);
+    console.log('✅ teacher_attendance ready.');
 
+    // 2. teacher_leave_quota
     await pool.query(`
       CREATE TABLE IF NOT EXISTS teacher_leave_quota (
-        id INT AUTO_INCREMENT PRIMARY KEY, empId VARCHAR(50) NOT NULL,
-        leaveTypeName VARCHAR(100) NOT NULL, allocatedDays DECIMAL(6,1) NOT NULL DEFAULT 0,
-        year INT NOT NULL, notes VARCHAR(255) DEFAULT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        empId VARCHAR(50) NOT NULL,
+        leaveTypeName VARCHAR(100) NOT NULL,
+        allocatedDays DECIMAL(6,1) NOT NULL DEFAULT 0,
+        year INT NOT NULL,
+        notes VARCHAR(255) DEFAULT NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY uq_quota (empId, leaveTypeName, year)
       )`);
+    console.log('✅ teacher_leave_quota ready.');
 
-    // teacherleave id column
+    // 3. ★ holiday table — NEW
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS holiday (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        holidayName VARCHAR(100) NOT NULL,
+        holidayDate DATE NOT NULL,
+        holidayType VARCHAR(50) DEFAULT 'National',
+        UNIQUE KEY uq_holiday_date (holidayDate)
+      )`);
+    console.log('✅ holiday ready.');
+
+    // 4. ★ dailyattendance table — NEW
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS dailyattendance (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        empId VARCHAR(50) NOT NULL,
+        attendanceDate DATE NOT NULL,
+        status VARCHAR(10) DEFAULT 'Present',
+        UNIQUE KEY uq_daily (empId, attendanceDate)
+      )`);
+    console.log('✅ dailyattendance ready.');
+
+    // 5. attendance summary table — NEW
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS attendance (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        empId VARCHAR(50) NOT NULL,
+        year INT NOT NULL,
+        totalDays INT DEFAULT 0,
+        sundays INT DEFAULT 0,
+        holidays INT DEFAULT 0,
+        workingDays INT DEFAULT 0,
+        leavesTaken INT DEFAULT 0,
+        daysPresent INT DEFAULT 0,
+        attendancePct DECIMAL(5,2) DEFAULT 0,
+        UNIQUE KEY uq_att_year (empId, year)
+      )`);
+    console.log('✅ attendance summary ready.');
+
+    // 6. teacherleave id column
     const [tlCols] = await pool.query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacherleave'`);
     const tlNames  = tlCols.map(c => c.COLUMN_NAME.toLowerCase());
     if (!tlNames.includes('id')) {
@@ -182,30 +189,35 @@ async function initDB() {
       console.log('✅ Added id to teacherleave.');
     }
 
-    // teacher extra columns
+    // 7. teacher extra columns
     const [tCols] = await pool.query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacher'`);
     const tNames  = tCols.map(c => c.COLUMN_NAME.toLowerCase());
     if (!tNames.includes('stafftype'))     { await pool.query(`ALTER TABLE teacher ADD COLUMN staffType VARCHAR(30) DEFAULT 'Teaching Staff'`); }
     if (!tNames.includes('gender'))        { await pool.query(`ALTER TABLE teacher ADD COLUMN gender VARCHAR(20) DEFAULT NULL`); }
     if (!tNames.includes('maritalstatus')) { await pool.query(`ALTER TABLE teacher ADD COLUMN maritalStatus VARCHAR(20) DEFAULT NULL`); }
 
-    // leavetype extra columns
+    // 8. leavetype extra columns
     const [ltCols] = await pool.query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='leavetype'`);
     const ltNames  = ltCols.map(c => c.COLUMN_NAME.toLowerCase());
     if (!ltNames.includes('applicableto'))     { await pool.query(`ALTER TABLE leavetype ADD COLUMN applicableTo VARCHAR(30) DEFAULT 'All'`); await pool.query(`UPDATE leavetype SET applicableTo='All' WHERE applicableTo IS NULL OR applicableTo=''`); }
     if (!ltNames.includes('genderapplicable')) { await pool.query(`ALTER TABLE leavetype ADD COLUMN genderApplicable VARCHAR(20) DEFAULT 'Any'`); await pool.query(`UPDATE leavetype SET genderApplicable='Any' WHERE genderApplicable IS NULL OR genderApplicable=''`); }
     if (!ltNames.includes('maritalapplicable')){ await pool.query(`ALTER TABLE leavetype ADD COLUMN maritalApplicable VARCHAR(20) DEFAULT 'Any'`); await pool.query(`UPDATE leavetype SET maritalApplicable='Any' WHERE maritalApplicable IS NULL OR maritalApplicable=''`); }
 
-    console.log('✅ DB init complete.');
+    console.log('✅ All DB tables ready.');
   } catch (err) { console.error('❌ DB init error:', err.message); }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function daysInYear(y) { return ((y%4===0&&y%100!==0)||y%400===0)?366:365; }
 function countSundaysInYear(y) { let c=0; const d=new Date(y,0,1); while(d.getFullYear()===y){if(d.getDay()===0)c++;d.setDate(d.getDate()+1);} return c; }
 async function getLeaveLimits() {
   try { const rows=await query('SELECT leaveTypeName,maxDays FROM leavetype'); if(!rows.length)throw new Error('empty'); const l={}; rows.forEach(r=>{l[r.leaveTypeName]=r.maxDays;}); return l; }
   catch(e) { return {Medical:10,Casual:12,Duty:10,Compoff:5}; }
 }
+
+// ── Health check (keeps Render from sleeping) ─────────────────────────────────
+app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/', (req, res) => res.redirect('/dashboard.html'));
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 app.post('/api/login', async(req,res)=>{
@@ -259,7 +271,7 @@ app.put('/api/leave-types/:id', async(req,res)=>{
 });
 app.delete('/api/leave-types/:id', async(req,res)=>{ try{await query('DELETE FROM leavetype WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
-// ── TEACHER LEAVE TYPES (filtered by staff profile) ───────────────────────────
+// ── TEACHER LEAVE TYPES ───────────────────────────────────────────────────────
 app.get('/api/teacher-leave-types', async(req,res)=>{
   const {empId,year}=req.query; if(!empId) return res.status(400).json({error:'empId is required'});
   const targetYear=parseInt(year)||new Date().getFullYear();
@@ -297,7 +309,6 @@ app.get('/api/teacher-leave-balance', async(req,res)=>{
 
 // ── TEACHER LEAVES ────────────────────────────────────────────────────────────
 app.get('/api/teacher-leaves', async(req,res)=>{ try{const empId=req.query.empId; res.json(empId?await query('SELECT * FROM teacherleave WHERE empId=?',[empId]):await query('SELECT * FROM teacherleave'));}catch(err){res.status(500).json({error:err.message});} });
-
 app.post('/api/teacher-leaves', async(req,res)=>{
   const b=req.body; const empId=b.empId; const startDate=b.startDate||b.date; const endDate=b.endDate||b.date; const leaveType=b.leaveType||'Casual';
   if(!empId) return res.status(400).json({error:'Teacher ID is required.'});
@@ -322,62 +333,27 @@ app.post('/api/teacher-leaves', async(req,res)=>{
     res.json({success:true,message:'Leave request submitted successfully.',duration,leaveType,startDate,endDate});
   }catch(err){res.status(500).json({error:err.message});}
 });
-
 app.put('/api/teacher-leaves/:id', async(req,res)=>{
   const id=req.params.id; const {startDate,endDate,leaveType,status,duration}=req.body;
   if(!startDate||!endDate||!leaveType) return res.status(400).json({error:'Start Date, End Date and Leave Type are required.'});
   try{ const result=await query('UPDATE teacherleave SET startDate=?,endDate=?,date=?,leaveType=?,status=?,duration=? WHERE id=?',[startDate,endDate,startDate,leaveType,status||'Pending',duration,id]); if(result.affectedRows===0) return res.status(404).json({error:'Leave record not found.'}); res.json({success:true,message:'Leave updated.'}); }
   catch(err){res.status(500).json({error:err.message});}
 });
-
-// ── ★ PATCH — Approve/Reject + AUTO EMAIL ─────────────────────────────────────
 app.patch('/api/teacher-leaves/:id', async(req,res)=>{
   const {action}=req.body;
-  if(!['Approved','Rejected'].includes(action))
-    return res.status(400).json({error:'Action must be Approved or Rejected.'});
+  if(!['Approved','Rejected'].includes(action)) return res.status(400).json({error:'Action must be Approved or Rejected.'});
   try{
-    // 1. Update status
     await query('UPDATE teacherleave SET status=? WHERE id=?',[action,req.params.id]);
-
-    // 2. Fetch leave + teacher details for email
-    const rows=await query(
-      `SELECT tl.*,
-              t.name  AS teacherName,
-              t.email AS teacherEmail
-         FROM teacherleave tl
-         LEFT JOIN teacher t ON t.empId = tl.empId
-        WHERE tl.id=?`,
-      [req.params.id]
-    );
-
-    let emailStatus = '';
-
+    const rows=await query(`SELECT tl.*,t.name AS teacherName,t.email AS teacherEmail FROM teacherleave tl LEFT JOIN teacher t ON t.empId=tl.empId WHERE tl.id=?`,[req.params.id]);
+    let emailStatus='';
     if(rows.length && rows[0].teacherEmail){
       const l=rows[0];
-      try{
-        await sendLeaveEmail(
-          l.teacherEmail,
-          l.teacherName  || l.empId,
-          l.leaveType    || 'Leave',
-          l.startDate    || l.date,
-          l.endDate      || l.date,
-          l.duration     || '1',
-          action
-        );
-        emailStatus = ' Email sent to ' + l.teacherEmail;
-      } catch(emailErr){
-        console.error('❌ Email failed:', emailErr.message);
-        emailStatus = ' (Email failed: ' + emailErr.message + ')';
-      }
-    } else {
-      emailStatus = ' (No email — teacher has no email address saved)';
-      console.log('⚠️ No email address for teacher, skipping email.');
-    }
-
-    res.json({success:true, message:`Leave ${action} successfully.${emailStatus}`});
+      try{ await sendLeaveEmail(l.teacherEmail,l.teacherName||l.empId,l.leaveType||'Leave',l.startDate||l.date,l.endDate||l.date,l.duration||'1',action); emailStatus=' Email sent to '+l.teacherEmail; }
+      catch(emailErr){ console.error('❌ Email failed:',emailErr.message); emailStatus=' (Email failed: '+emailErr.message+')'; }
+    } else { emailStatus=' (No email saved for teacher)'; }
+    res.json({success:true,message:`Leave ${action} successfully.${emailStatus}`});
   }catch(err){res.status(500).json({error:err.message});}
 });
-
 app.delete('/api/teacher-leaves/:id', async(req,res)=>{ try{await query('DELETE FROM teacherleave WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
 // ── STUDENT LEAVE BALANCE ─────────────────────────────────────────────────────
@@ -411,14 +387,77 @@ app.post('/api/college-fees', async(req,res)=>{ const b=req.body; try{await quer
 
 // ── HOLIDAYS ──────────────────────────────────────────────────────────────────
 app.get('/api/holidays', async(req,res)=>{ try{const year=req.query.year; res.json(year?await query('SELECT * FROM holiday WHERE YEAR(holidayDate)=? ORDER BY holidayDate',[year]):await query('SELECT * FROM holiday ORDER BY holidayDate'));}catch(err){res.status(500).json({error:err.message});} });
-app.post('/api/holidays', async(req,res)=>{ const {holidayName,holidayDate,holidayType}=req.body; if(!holidayName||!holidayDate) return res.status(400).json({error:'Name and date required.'}); try{ const ex=await query('SELECT id FROM holiday WHERE holidayDate=?',[holidayDate]); if(ex.length) return res.status(409).json({error:`Holiday already exists on ${holidayDate}.`}); await query('INSERT INTO holiday (holidayName,holidayDate,holidayType) VALUES (?,?,?)',[holidayName,holidayDate,holidayType||'National']); res.json({success:true,message:'Holiday added.'}); }catch(err){res.status(500).json({error:err.message});} });
+app.post('/api/holidays', async(req,res)=>{
+  const {holidayName,holidayDate,holidayType}=req.body;
+  if(!holidayName||!holidayDate) return res.status(400).json({error:'Name and date required.'});
+  try{
+    const ex=await query('SELECT id FROM holiday WHERE holidayDate=?',[holidayDate]);
+    if(ex.length) return res.status(409).json({error:`Holiday already exists on ${holidayDate}.`});
+    await query('INSERT INTO holiday (holidayName,holidayDate,holidayType) VALUES (?,?,?)',[holidayName,holidayDate,holidayType||'National']);
+    res.json({success:true,message:'Holiday added.'});
+  }catch(err){res.status(500).json({error:err.message});}
+});
 app.delete('/api/holidays/:id', async(req,res)=>{ try{await query('DELETE FROM holiday WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
-// ── ATTENDANCE ────────────────────────────────────────────────────────────────
-app.get('/api/daily-attendance', async(req,res)=>{ const {empId,year,month}=req.query; try{ let sql='SELECT * FROM dailyattendance WHERE 1=1'; const params=[]; if(empId){sql+=' AND empId=?';params.push(empId);} if(year){sql+=' AND YEAR(attendanceDate)=?';params.push(year);} if(month){sql+=' AND MONTH(attendanceDate)=?';params.push(month);} sql+=' ORDER BY attendanceDate'; res.json(await query(sql,params)); }catch(err){res.status(500).json({error:err.message});} });
-app.post('/api/daily-attendance', async(req,res)=>{ const {records}=req.body; if(!records||!records.length) return res.status(400).json({error:'No records.'}); try{ for(const r of records){if(!r.empId||!r.attendanceDate)continue; const ex=await query('SELECT id FROM dailyattendance WHERE empId=? AND attendanceDate=?',[r.empId,r.attendanceDate]); if(ex.length){await query('UPDATE dailyattendance SET status=? WHERE empId=? AND attendanceDate=?',[r.status||'Present',r.empId,r.attendanceDate]);}else{await query('INSERT INTO dailyattendance (empId,attendanceDate,status) VALUES (?,?,?)',[r.empId,r.attendanceDate,r.status||'Present']);}} res.json({success:true,message:`${records.length} records saved.`}); }catch(err){res.status(500).json({error:err.message});} });
-app.get('/api/attendance', async(req,res)=>{ try{ const {empId,year}=req.query; let sql=`SELECT a.*,t.name AS teacherName,t.department FROM attendance a LEFT JOIN teacher t ON t.empId=a.empId WHERE 1=1`; const params=[]; if(empId){sql+=' AND a.empId=?';params.push(empId);} if(year){sql+=' AND a.year=?';params.push(year);} sql+=' ORDER BY a.year DESC,t.name'; res.json(await query(sql,params)); }catch(err){res.status(500).json({error:err.message});} });
-app.post('/api/attendance', async(req,res)=>{ const b=req.body; if(!b.empId||!b.year) return res.status(400).json({error:'empId and year required.'}); try{ const ex=await query('SELECT id FROM attendance WHERE empId=? AND year=?',[b.empId,b.year]); if(ex.length){await query(`UPDATE attendance SET totalDays=?,sundays=?,holidays=?,workingDays=?,leavesTaken=?,daysPresent=?,attendancePct=? WHERE empId=? AND year=?`,[b.totalDays||0,b.sundays||0,b.holidays||0,b.workingDays||0,b.leavesTaken||0,b.daysPresent||0,b.attendancePct||0,b.empId,b.year]);}else{await query(`INSERT INTO attendance (empId,year,totalDays,sundays,holidays,workingDays,leavesTaken,daysPresent,attendancePct) VALUES (?,?,?,?,?,?,?,?,?)`,[b.empId,b.year,b.totalDays||0,b.sundays||0,b.holidays||0,b.workingDays||0,b.leavesTaken||0,b.daysPresent||0,b.attendancePct||0]);} res.json({success:true,message:'Attendance saved.'}); }catch(err){res.status(500).json({error:err.message});} });
+// ── DAILY ATTENDANCE ──────────────────────────────────────────────────────────
+app.get('/api/daily-attendance', async(req,res)=>{
+  const {empId,year,month}=req.query;
+  try{
+    let sql='SELECT * FROM dailyattendance WHERE 1=1';
+    const params=[];
+    if(empId){sql+=' AND empId=?';params.push(empId);}
+    if(year){sql+=' AND YEAR(attendanceDate)=?';params.push(year);}
+    if(month){sql+=' AND MONTH(attendanceDate)=?';params.push(month);}
+    sql+=' ORDER BY attendanceDate';
+    res.json(await query(sql,params));
+  }catch(err){res.status(500).json({error:err.message});}
+});
+
+app.post('/api/daily-attendance', async(req,res)=>{
+  const {records}=req.body;
+  if(!records||!records.length) return res.status(400).json({error:'No records.'});
+  try{
+    for(const r of records){
+      if(!r.empId||!r.attendanceDate) continue;
+      // Use INSERT ... ON DUPLICATE KEY UPDATE for free DB (fewer queries)
+      await query(
+        `INSERT INTO dailyattendance (empId,attendanceDate,status) VALUES (?,?,?)
+         ON DUPLICATE KEY UPDATE status=VALUES(status)`,
+        [r.empId, r.attendanceDate, r.status||'Present']
+      );
+    }
+    res.json({success:true,message:`${records.length} records saved.`});
+  }catch(err){res.status(500).json({error:err.message});}
+});
+
+// ── ATTENDANCE SUMMARY ────────────────────────────────────────────────────────
+app.get('/api/attendance', async(req,res)=>{
+  try{
+    const {empId,year}=req.query;
+    let sql=`SELECT a.*,t.name AS teacherName,t.department FROM attendance a LEFT JOIN teacher t ON t.empId=a.empId WHERE 1=1`;
+    const params=[];
+    if(empId){sql+=' AND a.empId=?';params.push(empId);}
+    if(year){sql+=' AND a.year=?';params.push(year);}
+    sql+=' ORDER BY a.year DESC,t.name';
+    res.json(await query(sql,params));
+  }catch(err){res.status(500).json({error:err.message});}
+});
+
+app.post('/api/attendance', async(req,res)=>{
+  const b=req.body;
+  if(!b.empId||!b.year) return res.status(400).json({error:'empId and year required.'});
+  try{
+    await query(
+      `INSERT INTO attendance (empId,year,totalDays,sundays,holidays,workingDays,leavesTaken,daysPresent,attendancePct)
+       VALUES (?,?,?,?,?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE totalDays=VALUES(totalDays),sundays=VALUES(sundays),holidays=VALUES(holidays),
+       workingDays=VALUES(workingDays),leavesTaken=VALUES(leavesTaken),daysPresent=VALUES(daysPresent),attendancePct=VALUES(attendancePct)`,
+      [b.empId,b.year,b.totalDays||0,b.sundays||0,b.holidays||0,b.workingDays||0,b.leavesTaken||0,b.daysPresent||0,b.attendancePct||0]
+    );
+    res.json({success:true,message:'Attendance saved.'});
+  }catch(err){res.status(500).json({error:err.message});}
+});
+
 app.put('/api/attendance/:id', async(req,res)=>{ const b=req.body; try{ const dp=(b.workingDays||0)-(b.leavesTaken||0); const pct=b.workingDays>0?((dp/b.workingDays)*100).toFixed(2):0; await query(`UPDATE attendance SET workingDays=?,leavesTaken=?,daysPresent=?,attendancePct=? WHERE id=?`,[b.workingDays||0,b.leavesTaken||0,dp,pct,req.params.id]); res.json({success:true,daysPresent:dp,attendancePct:pct}); }catch(err){res.status(500).json({error:err.message});} });
 app.delete('/api/attendance/:id', async(req,res)=>{ try{await query('DELETE FROM attendance WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
@@ -430,8 +469,6 @@ app.post('/api/teacher-leave-quota/bulk', async(req,res)=>{ const {empId,year,qu
 app.delete('/api/teacher-leave-quota/:id', async(req,res)=>{ try{await query('DELETE FROM teacher_leave_quota WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-// app.get('/api/dashboard', async(req,res)=>{ try{ const s=await query('SELECT COUNT(*) AS total FROM student'); const t=await query('SELECT COUNT(*) AS total FROM teacher'); const sl=await query('SELECT COUNT(*) AS total FROM studentleave'); const tl=await query('SELECT COUNT(*) AS total FROM teacherleave'); res.json({totalStudents:s[0].total,totalTeachers:t[0].total,pendingStudentLeaves:sl[0].total,pendingTeacherLeaves:tl[0].total}); }catch(err){res.status(500).json({error:err.message});} });
-
 app.get('/api/dashboard', async(req,res)=>{
   try{
     const s  = await query('SELECT COUNT(*) AS total FROM student');
@@ -463,4 +500,6 @@ app.put('/api/teacher-attendance/:id', async(req,res)=>{ const {workingDays,leav
 app.delete('/api/teacher-attendance/:id', async(req,res)=>{ try{await query('DELETE FROM teacher_attendance WHERE id=?',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
 // ── START ─────────────────────────────────────────────────────────────────────
-initDB().then(()=>{ app.listen(PORT,()=>{ console.log('🚀 UMS API running at http://localhost:'+PORT); }); });
+initDB().then(()=>{
+  app.listen(PORT, ()=>{ console.log(`🚀 UMS API running on port ${PORT}`); });
+});
