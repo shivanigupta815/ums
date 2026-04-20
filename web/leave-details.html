@@ -19,14 +19,12 @@
     .ld-approved { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
     .ld-rejected { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
 
-    /* Action buttons */
     .ld-btn { display:inline-block; border:none; border-radius:6px; padding:5px 12px; font-size:.8rem; font-weight:600; cursor:pointer; margin-right:3px; transition:opacity .15s; }
     .ld-btn:hover:not([disabled]) { opacity:.85; }
     .ld-approve { background:#16a34a; color:#fff; }
     .ld-reject  { background:#dc2626; color:#fff; }
     .ld-grey    { background:#e5e7eb; color:#9ca3af; cursor:not-allowed; }
 
-    /* Custom confirm popup */
     #ld-confirm-overlay {
       display:none; position:fixed; inset:0; z-index:99999;
       background:rgba(0,0,0,.55); align-items:center; justify-content:center;
@@ -46,7 +44,6 @@
     .ld-c-btn:hover { opacity:.85; }
     #ld-c-no  { background:#f3f4f6; color:#374151; }
 
-    /* Toast */
     #ld-toast {
       display:none; position:fixed; bottom:24px; right:24px; z-index:99998;
       min-width:320px; max-width:440px; padding:14px 18px; border-radius:12px;
@@ -76,9 +73,7 @@
           <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
           <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
           <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
-         <!-- <li class="nav-item"><a class="nav-link" href="mark-attendance.html">Mark Attendance</a></li>
-          <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance</a></li> -->
-          <li class="nav-item"><a class="nav-link text-danger" href="#" id="db-logout">Logout</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="ld-logout">Logout</a></li>
         </ul>
       </div>
     </div>
@@ -95,10 +90,9 @@
       </p>
     </div>
 
-    <!-- Filter -->
     <div class="row g-2 mb-3 align-items-center">
       <div class="col-md-3">
-        <input class="form-control form-control-sm" id="ld-filter-id" placeholder="Filter by Teacher ID…">
+        <input class="form-control form-control-sm" id="ld-filter-id" placeholder="Filter by Teacher ID or Name…">
       </div>
       <div class="col-md-2">
         <select class="form-select form-select-sm" id="ld-filter-st">
@@ -130,13 +124,12 @@
             <th class="text-center" style="min-width:300px;">Actions</th>
           </tr>
         </thead>
-        <!-- Use unique ID so script.js cannot find and duplicate this tbody -->
         <tbody id="ld-tbody"></tbody>
       </table>
     </div>
   </main>
 
-  <!-- Edit Modal — unique IDs throughout -->
+  <!-- Edit Modal -->
   <div class="modal fade" id="ld-edit-modal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -205,59 +198,57 @@
   <script src="script.js"></script>
 
   <script>
-  // ═══════════════════════════════════════════════════════════════════════════
-  // LEAVE DETAILS PAGE — All IDs prefixed with "ld-" to avoid script.js clash
-  // ═══════════════════════════════════════════════════════════════════════════
-  (function() {
+  (function () {
     'use strict';
 
-    // ── API base ──────────────────────────────────────────────────────────────
     var BASE = 'https://ums-app1.onrender.com/api';
-
-    // ── Teacher name cache ────────────────────────────────────────────────────
     var nameMap = {};
 
-    // ── Toast ─────────────────────────────────────────────────────────────────
+    /* ── Toast ────────────────────────────────────────────────────────────── */
     var toastTimer = null;
     function showToast(msg, ok) {
       var el = document.getElementById('ld-toast');
       el.className = ok ? 'ld-toast-ok' : 'ld-toast-err';
-      el.style.cssText = 'display:block;position:fixed;bottom:24px;right:24px;z-index:99998;' +
+      el.style.cssText =
+        'display:block;position:fixed;bottom:24px;right:24px;z-index:99998;' +
         'min-width:320px;max-width:440px;padding:14px 18px;border-radius:12px;' +
         'font-size:.9rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.18);' +
-        (ok ? 'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;'
-            : 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;');
+        (ok
+          ? 'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;'
+          : 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;');
       el.textContent = msg;
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(function() { el.style.display = 'none'; }, 6000);
+      toastTimer = setTimeout(function () { el.style.display = 'none'; }, 6000);
     }
 
-    // ── Page message ──────────────────────────────────────────────────────────
+    /* ── Page message ─────────────────────────────────────────────────────── */
     function showMsg(html, ok) {
       document.getElementById('ld-msg').innerHTML =
         '<div class="alert alert-' + (ok ? 'success' : 'danger') + ' alert-dismissible">' +
-        html + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        html +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
     }
 
-    // ── Status badge ──────────────────────────────────────────────────────────
+    /* ── Badge ────────────────────────────────────────────────────────────── */
     function mkBadge(s) {
-      var v   = (!s || s === 'null' || s.trim() === '') ? 'Pending' : s.trim();
+      var v   = !s || s === 'null' || s.trim() === '' ? 'Pending' : s.trim();
       var cls = v === 'Approved' ? 'ld-approved' : v === 'Rejected' ? 'ld-rejected' : 'ld-pending';
       return '<span class="ld-badge ' + cls + '">' + v + '</span>';
     }
 
-    // ── Custom confirm popup ──────────────────────────────────────────────────
+    /* ── Confirm popup ────────────────────────────────────────────────────── */
     function ldConfirm(opts) {
-      return new Promise(function(resolve) {
+      return new Promise(function (resolve) {
         document.getElementById('ld-c-icon').textContent  = opts.icon  || '❓';
         document.getElementById('ld-c-title').textContent = opts.title || 'Confirm';
         document.getElementById('ld-c-msg').innerHTML     = opts.msg   || '';
 
         var yesEl = document.getElementById('ld-c-yes');
-        yesEl.textContent = opts.yesLabel || 'Confirm';
-        yesEl.style.cssText = 'border:none;border-radius:8px;padding:10px 26px;' +
-          'font-size:.88rem;font-weight:700;cursor:pointer;margin:0 5px;color:#fff;' +
-          'background:' + (opts.yesColor || '#16a34a') + ';';
+        yesEl.textContent   = opts.yesLabel || 'Confirm';
+        yesEl.style.cssText =
+          'border:none;border-radius:8px;padding:10px 26px;font-size:.88rem;' +
+          'font-weight:700;cursor:pointer;margin:0 5px;color:#fff;background:' +
+          (opts.yesColor || '#16a34a') + ';';
 
         document.getElementById('ld-confirm-overlay').classList.add('show');
 
@@ -268,81 +259,104 @@
         }
         function onYes() { cleanup(); resolve(true);  }
         function onNo()  { cleanup(); resolve(false); }
-
         yesEl.addEventListener('click', onYes);
         document.getElementById('ld-c-no').addEventListener('click', onNo);
       });
     }
 
-    // ── Load Leaves ───────────────────────────────────────────────────────────
+    /* ── Fetch with retry (handles Render cold-start delays) ──────────────── */
+    async function fetchWithRetry(url, opts, retries) {
+      retries = retries || 3;
+      for (var i = 0; i < retries; i++) {
+        try {
+          var res = await fetch(url, opts);
+          if (res.ok || res.status < 500) return res;
+        } catch (e) {
+          if (i === retries - 1) throw e;
+        }
+        await new Promise(function (r) { setTimeout(r, 2000); });
+      }
+    }
+
+    /* ── Load leaves ──────────────────────────────────────────────────────── */
     async function loadLeaves() {
       var filterId = document.getElementById('ld-filter-id').value.trim();
       var filterSt = document.getElementById('ld-filter-st').value;
       var tbody    = document.getElementById('ld-tbody');
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3">' +
-        '<div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
+
+      tbody.innerHTML =
+        '<tr><td colspan="8" class="text-center py-3">' +
+        '<div class="spinner-border spinner-border-sm me-2"></div>' +
+        'Loading… (waking server if needed, please wait)</td></tr>';
 
       try {
-      // Fetch all teachers and all leaves, then filter client-side
-      var results = await Promise.all([
-        fetch(BASE + '/teachers').then(function(r) { return r.json(); }),
-        fetch(BASE + '/teacher-leaves').then(function(r) { return r.json(); })
-      ]);
+        var results = await Promise.all([
+          fetchWithRetry(BASE + '/teachers').then(function (r) { return r.json(); }),
+          fetchWithRetry(BASE + '/teacher-leaves').then(function (r) { return r.json(); })
+        ]);
 
-      var teachers = results[0];
-      var leaves   = results[1];
+        var teachers = results[0];
+        var leaves   = results[1];
 
-      // Rebuild name map
-      nameMap = {};
-      if (Array.isArray(teachers)) {
-        teachers.forEach(function(t) {
-          if (t.empId && !nameMap[t.empId]) nameMap[t.empId] = t.name || t.empId;
-        });
-      }
+        /* Rebuild name cache */
+        nameMap = {};
+        if (Array.isArray(teachers)) {
+          teachers.forEach(function (t) {
+            if (t.empId && !nameMap[t.empId]) nameMap[t.empId] = t.name || t.empId;
+          });
+        }
 
-      // ✅ Filter by ID OR name (client-side)
-      if (filterId) {
-        var q = filterId.toLowerCase();
-        leaves = leaves.filter(function(l) {
-          var empId = (l.empId || '').toLowerCase();
-          var name  = (nameMap[l.empId] || '').toLowerCase();
-          return empId.includes(q) || name.includes(q);
-        });
-      }
+        /* Validate API response */
+        if (!Array.isArray(leaves)) {
+          tbody.innerHTML =
+            '<tr><td colspan="8" class="text-center text-danger py-3">' +
+            'Unexpected API response. Check the console for details.</td></tr>';
+          console.error('Unexpected leaves response:', leaves);
+          return;
+        }
 
-      // Status filter
-      if (filterSt) {
-      leaves = leaves.filter(function(l) {
-            var s = (!l.status || l.status === 'null' || l.status.trim() === '') ? 'Pending' : l.status.trim();
+        /* Client-side filters */
+        if (filterId) {
+          var q = filterId.toLowerCase();
+          leaves = leaves.filter(function (l) {
+            var empId = (l.empId || '').toLowerCase();
+            var name  = (nameMap[l.empId] || '').toLowerCase();
+            return empId.includes(q) || name.includes(q);
+          });
+        }
+        if (filterSt) {
+          leaves = leaves.filter(function (l) {
+            var s = !l.status || l.status === 'null' || l.status.trim() === ''
+              ? 'Pending' : l.status.trim();
             return s === filterSt;
           });
         }
 
         if (!leaves.length) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No leave records found.</td></tr>';
+          tbody.innerHTML =
+            '<tr><td colspan="8" class="text-center text-muted py-3">No leave records found.</td></tr>';
           return;
         }
 
         tbody.innerHTML = '';
 
-        leaves.forEach(function(l) {
-          var st        = (!l.status || l.status === 'null' || l.status.trim() === '') ? 'Pending' : l.status.trim();
-          var isPending = (st === 'Pending');
-          var lid       = l.id;
-          var empId     = (l.empId || '').replace(/'/g, '');
-          var tName     = (nameMap[empId] || empId || '—').replace(/'/g, '');
-          var ltype     = (l.leaveType || '—').replace(/'/g, '');
-          var sDate     = l.startDate || l.date || '—';
-          var eDate     = l.endDate   || l.date || '—';
-          var dur       = l.duration  || '—';
+        leaves.forEach(function (l) {
+          var st        = !l.status || l.status === 'null' || l.status.trim() === ''
+            ? 'Pending' : l.status.trim();
+          var isPending = st === 'Pending';
+          var lid   = l.id;
+          var empId = (l.empId  || '').replace(/'/g, '');
+          var tName = (nameMap[empId] || empId || '—').replace(/'/g, '');
+          var ltype = (l.leaveType || '—').replace(/'/g, '');
+          var sDate = l.startDate || l.date || '—';
+          var eDate = l.endDate   || l.date || '—';
+          var dur   = l.duration  || '—';
 
-          // Build approve button
           var approveBtn = isPending
             ? '<button class="ld-btn ld-approve ld-do-action" data-lid="' + lid +
               '" data-empid="' + empId + '" data-action="Approved">✅ Approve</button>'
             : '<button class="ld-btn ld-grey" disabled title="Already ' + st + '">✅ Approve</button>';
 
-          // Build reject button
           var rejectBtn = isPending
             ? '<button class="ld-btn ld-reject ld-do-action" data-lid="' + lid +
               '" data-empid="' + empId + '" data-action="Rejected">❌ Reject</button>'
@@ -350,10 +364,10 @@
 
           var editBtn =
             '<button class="btn btn-sm btn-outline-secondary ld-do-edit ms-1"' +
-            ' data-lid="' + lid + '" data-empid="' + empId + '"' +
-            ' data-name="' + tName + '" data-start="' + sDate + '"' +
-            ' data-end="' + eDate + '" data-type="' + ltype + '"' +
-            ' data-status="' + st + '">✏️</button>';
+            ' data-lid="'    + lid   + '" data-empid="' + empId  + '"' +
+            ' data-name="'   + tName + '" data-start="' + sDate  + '"' +
+            ' data-end="'    + eDate + '" data-type="'  + ltype  + '"' +
+            ' data-status="' + st    + '">✏️</button>';
 
           var deleteBtn =
             '<button class="btn btn-sm btn-outline-danger ld-do-delete ms-1"' +
@@ -366,43 +380,45 @@
             '<td>' + sDate + '</td>' +
             '<td>' + eDate + '</td>' +
             '<td>' + ltype + '</td>' +
-            '<td>' + dur + ' day(s)</td>' +
+            '<td>' + dur   + ' day(s)</td>' +
             '<td>' + mkBadge(st) + '</td>' +
             '<td style="text-align:center;white-space:nowrap;">' +
               approveBtn + rejectBtn + editBtn + deleteBtn +
             '</td>';
-
           tbody.appendChild(row);
         });
 
-      } catch(err) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-3">Error: ' + err.message + '</td></tr>';
+      } catch (err) {
+        tbody.innerHTML =
+          '<tr><td colspan="8" class="text-center text-danger py-3">' +
+          'Error loading data: ' + err.message +
+          '<br><small>The server may still be waking up — try refreshing in a moment.</small>' +
+          '</td></tr>';
+        console.error('loadLeaves error:', err);
       }
     }
 
-    // ── Approve / Reject click ────────────────────────────────────────────────
-    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+    /* ── Approve / Reject ─────────────────────────────────────────────────── */
+    document.getElementById('ld-tbody').addEventListener('click', async function (e) {
       var btn = e.target.closest('.ld-do-action');
       if (!btn || btn.disabled) return;
 
-      var lid      = btn.dataset.lid;
-      var empId    = btn.dataset.empid;
-      var action   = btn.dataset.action;
-      var tName    = nameMap[empId] || empId;
-      var isApprove = (action === 'Approved');
+      var lid       = btn.dataset.lid;
+      var empId     = btn.dataset.empid;
+      var action    = btn.dataset.action;
+      var tName     = nameMap[empId] || empId;
+      var isApprove = action === 'Approved';
 
       var confirmed = await ldConfirm({
         icon:     isApprove ? '✅' : '❌',
         title:    isApprove ? 'Approve Leave' : 'Reject Leave',
         msg:      '<strong>' + tName + '</strong><br><span style="color:#6b7280;">Teacher ID: ' + empId + '</span><br><br>' +
-                  '📧 An approval email will be sent to the teacher automatically.',
+                  '📧 An email will be sent to the teacher automatically.',
         yesColor: isApprove ? '#16a34a' : '#dc2626',
         yesLabel: isApprove ? '✅ Yes, Approve' : '❌ Yes, Reject'
       });
-
       if (!confirmed) return;
 
-      // Disable while processing
       btn.disabled    = true;
       btn.textContent = '⏳';
 
@@ -415,13 +431,13 @@
         var data = await res.json();
 
         if (data.success) {
-          var msg = data.message || ('Leave ' + action + ' successfully.');
-          showMsg((isApprove ? '✅ ' : '❌ ') + msg, true);
+          var msg     = data.message || 'Leave ' + action + ' successfully.';
           var emailOk = msg.toLowerCase().includes('email sent');
+          showMsg((isApprove ? '✅ ' : '❌ ') + msg, true);
           showToast(
             emailOk
               ? '📧 Email sent successfully!'
-              : '⚠️ ' + (msg.includes('No email') ? 'Teacher has no email address on record.' : msg),
+              : '⚠️ ' + (msg.includes('No email') ? 'Teacher has no email on record.' : msg),
             emailOk
           );
           loadLeaves();
@@ -430,24 +446,24 @@
           btn.disabled    = false;
           btn.textContent = isApprove ? '✅ Approve' : '❌ Reject';
         }
-      } catch(err) {
+      } catch (err) {
         showMsg('❌ Server error: ' + err.message, false);
         btn.disabled    = false;
         btn.textContent = isApprove ? '✅ Approve' : '❌ Reject';
       }
     });
 
-    // ── Edit click ────────────────────────────────────────────────────────────
-    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+    /* ── Edit ─────────────────────────────────────────────────────────────── */
+    document.getElementById('ld-tbody').addEventListener('click', async function (e) {
       var btn = e.target.closest('.ld-do-edit');
       if (!btn) return;
 
-      document.getElementById('ld-e-id').value     = btn.dataset.lid;
-      document.getElementById('ld-e-empid').value  = btn.dataset.empid;
-      document.getElementById('ld-e-name').value   = btn.dataset.name;
-      document.getElementById('ld-e-start').value  = btn.dataset.start;
-      document.getElementById('ld-e-end').value    = btn.dataset.end;
-      document.getElementById('ld-e-status').value = btn.dataset.status;
+      document.getElementById('ld-e-id').value      = btn.dataset.lid;
+      document.getElementById('ld-e-empid').value   = btn.dataset.empid;
+      document.getElementById('ld-e-name').value    = btn.dataset.name;
+      document.getElementById('ld-e-start').value   = btn.dataset.start;
+      document.getElementById('ld-e-end').value     = btn.dataset.end;
+      document.getElementById('ld-e-status').value  = btn.dataset.status;
       document.getElementById('ld-e-msg').innerHTML = '';
 
       try {
@@ -455,19 +471,19 @@
         var types = await res.json();
         var sel   = document.getElementById('ld-e-type');
         sel.innerHTML = '';
-        types.forEach(function(t) {
+        types.forEach(function (t) {
           var o = document.createElement('option');
           o.value = t.leaveTypeName; o.text = t.leaveTypeName;
           sel.appendChild(o);
         });
         sel.value = btn.dataset.type;
-      } catch(e) { console.error('leave types error:', e); }
+      } catch (err) { console.error('leave-types fetch error:', err); }
 
       new bootstrap.Modal(document.getElementById('ld-edit-modal')).show();
     });
 
-    // ── Save edit ─────────────────────────────────────────────────────────────
-    document.getElementById('ld-save-edit').addEventListener('click', async function() {
+    /* ── Save edit ────────────────────────────────────────────────────────── */
+    document.getElementById('ld-save-edit').addEventListener('click', async function () {
       var id        = document.getElementById('ld-e-id').value;
       var startDate = document.getElementById('ld-e-start').value;
       var endDate   = document.getElementById('ld-e-end').value;
@@ -485,7 +501,9 @@
         var res  = await fetch(BASE + '/teacher-leaves/' + id, {
           method:  'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ startDate: startDate, endDate: endDate, leaveType: leaveType, status: status, duration: String(duration) })
+          body:    JSON.stringify({ startDate: startDate, endDate: endDate,
+                                    leaveType: leaveType, status: status,
+                                    duration: String(duration) })
         });
         var data = await res.json();
         if (data.success) {
@@ -496,19 +514,18 @@
           document.getElementById('ld-e-msg').innerHTML =
             '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
         }
-      } catch(err) {
+      } catch (err) {
         document.getElementById('ld-e-msg').innerHTML =
           '<div class="alert alert-danger">❌ ' + err.message + '</div>';
       }
     });
 
-    // ── Delete click ──────────────────────────────────────────────────────────
-    document.getElementById('ld-tbody').addEventListener('click', async function(e) {
+    /* ── Delete ───────────────────────────────────────────────────────────── */
+    document.getElementById('ld-tbody').addEventListener('click', async function (e) {
       var btn = e.target.closest('.ld-do-delete');
       if (!btn) return;
 
       var lid = btn.dataset.lid;
-
       var confirmed = await ldConfirm({
         icon:     '🗑️',
         title:    'Delete Leave Record',
@@ -527,35 +544,33 @@
         } else {
           showMsg('❌ ' + (data.error || 'Failed'), false);
         }
-      } catch(err) { showMsg('❌ ' + err.message, false); }
+      } catch (err) { showMsg('❌ ' + err.message, false); }
     });
 
-    // ── Filter ────────────────────────────────────────────────────────────────
+    /* ── Filter ───────────────────────────────────────────────────────────── */
     document.getElementById('ld-filter-btn').addEventListener('click', loadLeaves);
-    document.getElementById('ld-clear-btn').addEventListener('click', function() {
+    document.getElementById('ld-clear-btn').addEventListener('click', function () {
       document.getElementById('ld-filter-id').value = '';
       document.getElementById('ld-filter-st').value = '';
       loadLeaves();
     });
 
-    // ── Logout ────────────────────────────────────────────────────────────────
-    document.getElementById('ld-logout').addEventListener('click', function(e) {
+    /* ── Logout ───────────────────────────────────────────────────────────── */
+    document.getElementById('ld-logout').addEventListener('click', function (e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';
     });
 
-    // ── Init ─────────────────────────────────────────────────────────────────
-    window.addEventListener('DOMContentLoaded', function() {
-      // Block script.js from interfering with this page
-      // by overriding any leave-table function it may try to run
-      if (typeof window.loadLeaveDetails === 'function') {
-        window.loadLeaveDetails = function() {};
-      }
-      loadLeaves();
-    });
+    /* ── Override script.js interference ─────────────────────────────────── */
+    if (typeof window.loadLeaveDetails === 'function') {
+      window.loadLeaveDetails = function () {};
+    }
 
-  })(); // end IIFE — completely isolated from script.js
+    /* ── FIXED: Call loadLeaves() directly — DOMContentLoaded already fired ─ */
+    loadLeaves();
+
+  })();
   </script>
 </body>
 </html>
