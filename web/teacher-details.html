@@ -46,8 +46,6 @@
           <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
           <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
           <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
-        <!-- <li class="nav-item"><a class="nav-link" href="mark-attendance.html">Mark Attendance</a></li>
-          <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance</a></li> -->
           <li class="nav-item"><a class="nav-link text-danger" href="#" id="db-logout">Logout</a></li>
         </ul>
         <div class="d-flex gap-2 ms-3">
@@ -199,7 +197,7 @@
   <script src="ums-confirm.js"></script>
   <script src="script.js"></script>
 
-  <script> 
+  <script>
     // Block script.js from rendering its own teacher table on this page
     window.renderTeachers = function() { return; };
 
@@ -208,11 +206,10 @@
       $('#saveEditBtn').off('click');
     });
 
-    // Use window.TAPI to avoid conflicts with script.js
-    window.TAPI = (location.protocol === 'file:') ? 'https://ums-app1.onrender.com/api' : '/api';
+    // ── FIXED: Always use Render API URL ──────────────────────────────────────
+    window.TAPI = 'https://ums-app1.onrender.com/api';
 
     // ── Safe display helper ────────────────────────────────────────────────────
-    // Returns "—" for null/empty/undefined, otherwise the value
     function disp(val) {
       if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') {
         return '<span class="text-muted">—</span>';
@@ -220,8 +217,7 @@
       return String(val);
     }
 
-    // ── Badge helpers with EMAIL VALIDATION ────────────────────────────────────
-    // Prevents email/wrong values from showing in staff/gender/marital columns
+    // ── Badge helpers ──────────────────────────────────────────────────────────
     var VALID_STAFF   = ['Teaching Staff', 'Non-Teaching Staff'];
     var VALID_GENDER  = ['Male', 'Female', 'Other'];
     var VALID_MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
@@ -244,7 +240,6 @@
       return '<span class="info-badge ' + cls + '">' + val + '</span>';
     }
 
-    // Safe email display — only shows value if it looks like an email
     function emailDisp(val) {
       if (!val || val === 'null' || !val.includes('@')) return '<span class="text-muted">—</span>';
       return '<a href="mailto:' + val + '" style="color:inherit;">' + val + '</a>';
@@ -259,7 +254,6 @@
         var res      = await fetch(window.TAPI + '/teachers');
         var teachers = await res.json();
 
-        // Filter
         if (filter) {
           var q = filter.toLowerCase();
           teachers = teachers.filter(function(t) {
@@ -280,7 +274,6 @@
 
         tbody.innerHTML = '';
         teachers.forEach(function(t) {
-          // Safely encode teacher data for edit button
           var safeData = JSON.stringify({
             empId:         t.empId         || '',
             name:          t.name          || '',
@@ -292,9 +285,9 @@
             aadhar:        t.aadhar        || '',
             department:    t.department    || '',
             education:     t.education     || '',
-            staffType:     VALID_STAFF.includes(t.staffType)   ? t.staffType   : '',
-            gender:        VALID_GENDER.includes(t.gender)     ? t.gender      : '',
-            maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus : ''
+            staffType:     VALID_STAFF.includes(t.staffType)       ? t.staffType      : '',
+            gender:        VALID_GENDER.includes(t.gender)         ? t.gender         : '',
+            maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus  : ''
           });
           var encoded = encodeURIComponent(safeData);
 
@@ -306,11 +299,9 @@
             '<td>' + disp(t.dob) + '</td>' +
             '<td>' + disp(t.department) + '</td>' +
             '<td>' + disp(t.education) + '</td>' +
-            // ── KEY FIX: validate values before displaying in badge columns ──
             '<td>' + staffBadge(t.staffType) + '</td>' +
             '<td>' + genderBadge(t.gender) + '</td>' +
             '<td>' + maritalBadge(t.maritalStatus) + '</td>' +
-            // ── Email only shows if it contains @ ──
             '<td>' + emailDisp(t.email) + '</td>' +
             '<td>' + disp(t.phone) + '</td>' +
             '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">' + disp(t.address) + '</td>' +
@@ -403,18 +394,17 @@
         });
         var data = await res.json();
         if (data.success) {
-        // Force close modal and remove backdrop to prevent freeze
-        var modalEl = document.getElementById('editTeacherModal');
-        var modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-        document.body.classList.remove('modal-open');
-        document.body.style.removeProperty('padding-right');
-        document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+          var modalEl = document.getElementById('editTeacherModal');
+          var modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+          document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
 
-        document.getElementById('tableMessage').innerHTML =
-          '<div class="alert alert-success alert-dismissible">✅ Teacher updated successfully.' +
-          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-        setTimeout(function() { loadTeachers(); }, 300);
+          document.getElementById('tableMessage').innerHTML =
+            '<div class="alert alert-success alert-dismissible">✅ Teacher updated successfully.' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+          setTimeout(function() { loadTeachers(); }, 300);
         } else {
           document.getElementById('editMessage').innerHTML =
             '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
@@ -448,8 +438,8 @@
       } catch(err) { alert('Delete failed: ' + err.message); }
     });
 
-    // ── Logout ────────────────────────────────────────────────────────────────
-    document.getElementById('logoutButton').addEventListener('click', function(e) {
+    // ── FIXED: Logout ─────────────────────────────────────────────────────────
+    document.getElementById('db-logout').addEventListener('click', function(e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';
