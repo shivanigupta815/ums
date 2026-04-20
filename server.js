@@ -122,7 +122,7 @@ async function initDB() {
         daysPresent DECIMAL(6,1) NOT NULL DEFAULT 0,
         attendancePct DECIMAL(5,2) NOT NULL DEFAULT 0,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP NULL DEFAULT NULL,
         UNIQUE KEY uq_teacher_year (empId, year)
       )`);
     console.log('✅ teacher_attendance ready.');
@@ -137,7 +137,7 @@ async function initDB() {
         year INT NOT NULL,
         notes VARCHAR(255) DEFAULT NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP NULL DEFAULT NULL,
         UNIQUE KEY uq_quota (empId, leaveTypeName, year)
       )`);
     console.log('✅ teacher_leave_quota ready.');
