@@ -932,7 +932,7 @@
       if (selectedTeacher || document.getElementById('teacherId').value.trim()) loadQuotas();
     });
 
-    document.getElementById('logoutButton').addEventListener('click', function(e) {
+    document.getElementById('db-logout').addEventListener('click', function(e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';

@@ -14,58 +14,20 @@
       padding: 0.75rem 1rem;
       display: none;
     }
-    .info-label {
-      font-size: 0.72rem; text-transform: uppercase;
-      letter-spacing: 0.8px; color: #94a3b8; font-weight: 600;
-    }
+    .info-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: #94a3b8; font-weight: 600; }
     .info-value { color: #e9d5ff; font-weight: 700; font-size: 0.95rem; }
-
-    /* Staff type badge */
-    .staff-badge {
-      display: inline-block; font-size: 0.72rem; font-weight: 700;
-      padding: 2px 10px; border-radius: 20px; margin-left: 8px;
-    }
-    .staff-badge.teaching {
-      background: rgba(34,197,94,0.15); color: #4ade80;
-      border: 1px solid rgba(34,197,94,0.4);
-    }
-    .staff-badge.nonteaching {
-      background: rgba(96,165,250,0.15); color: #93c5fd;
-      border: 1px solid rgba(96,165,250,0.4);
-    }
-
-    /* Leave type option groups */
-    .leave-type-note {
-      font-size: 0.78rem; color: #94a3b8; margin-top: 4px;
-    }
-    .leave-type-note span {
-      background: rgba(124,58,237,0.2); color: #c084fc;
-      border: 1px solid rgba(124,58,237,0.4); border-radius: 10px;
-      padding: 1px 8px; font-size: 0.7rem; font-weight: 700;
-    }
-
-    /* Searchable dropdown */
+    .staff-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-left: 8px; }
+    .staff-badge.teaching { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+    .staff-badge.nonteaching { background: rgba(96,165,250,0.15); color: #93c5fd; border: 1px solid rgba(96,165,250,0.4); }
+    .leave-type-note { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
+    .leave-type-note span { background: rgba(124,58,237,0.2); color: #c084fc; border: 1px solid rgba(124,58,237,0.4); border-radius: 10px; padding: 1px 8px; font-size: 0.7rem; font-weight: 700; }
     .search-dropdown-wrapper { position: relative; }
-    .search-dropdown-list {
-      position: absolute; top: 100%; left: 0; right: 0;
-      background: #1e1b4b; border: 1px solid rgba(167,139,250,0.4);
-      border-radius: 0 0 8px 8px; max-height: 220px;
-      overflow-y: auto; z-index: 9999; display: none;
-    }
-    .search-dropdown-list .dd-item {
-      padding: 0.55rem 1rem; cursor: pointer; font-size: 0.9rem;
-      color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.06);
-      transition: background 0.15s;
-    }
+    .search-dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid rgba(167,139,250,0.4); border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto; z-index: 9999; display: none; }
+    .search-dropdown-list .dd-item { padding: 0.55rem 1rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s; }
     .search-dropdown-list .dd-item:hover { background: rgba(124,58,237,0.3); color: #f0abfc; }
     .search-dropdown-list .dd-item:last-child { border-bottom: none; }
-    .search-dropdown-list .dd-no-result {
-      padding: 0.55rem 1rem; color: #94a3b8; font-size: 0.85rem; font-style: italic;
-    }
-
-    /* Loading spinner inside select */
+    .search-dropdown-list .dd-no-result { padding: 0.55rem 1rem; color: #94a3b8; font-size: 0.85rem; font-style: italic; }
     select:disabled { opacity: 0.6; }
-
     .balance-table th { background: rgba(124,58,237,0.2); color: #e9d5ff; }
     .balance-row-ok   { background: rgba(34,197,94,0.08); }
     .balance-row-warn { background: rgba(245,158,11,0.08); }
@@ -82,7 +44,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navMenu">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-         <li class="nav-item"><a class="nav-link active" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="dashboard.html">Home</a></li>
           <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
           <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
           <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
@@ -92,8 +54,6 @@
           <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
           <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
           <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
-          <!-- <li class="nav-item"><a class="nav-link" href="mark-attendance.html">Mark Attendance</a></li>
-          <li class="nav-item"><a class="nav-link" href="teacher-attendance.html">Attendance</a></li> -->
           <li class="nav-item"><a class="nav-link text-danger" href="#" id="db-logout">Logout</a></li>
         </ul>
       </div>
@@ -102,64 +62,32 @@
 
   <main class="container py-5">
     <h2 class="mb-1">Record Teacher Leave</h2>
-    <!-- <p class="text-muted small mb-4">
-      Leave types shown are automatically filtered based on the teacher's staff type
-      and any custom leaves added on the <a href="teacher-leave-quota.html">Leave Quota</a> page.
-    </p> -->
-
     <form id="leaveForm" novalidate>
       <div class="row g-3">
-
-        <!-- Searchable Teacher Input -->
         <div class="col-md-6">
-          <label class="form-label">Select Teacher
-            <span class="text-muted small">(type name or ID)</span>
-          </label>
+          <label class="form-label">Select Teacher <span class="text-muted small">(type name or ID)</span></label>
           <div class="search-dropdown-wrapper">
-            <input type="text" class="form-control" id="teacherSearch"
-                   placeholder="Type teacher name or ID..." autocomplete="off">
+            <input type="text" class="form-control" id="teacherSearch" placeholder="Type teacher name or ID..." autocomplete="off">
             <div class="search-dropdown-list" id="teacherDropdownList"></div>
           </div>
         </div>
-
-        <!-- Teacher ID (auto-filled) -->
         <div class="col-md-6">
           <label class="form-label">Teacher ID</label>
-          <input type="text" class="form-control" id="teacherId"
-                 placeholder="Auto-filled from selection" readonly style="opacity:0.8;">
+          <input type="text" class="form-control" id="teacherId" placeholder="Auto-filled from selection" readonly style="opacity:0.8;">
         </div>
-
-        <!-- Teacher info box -->
         <div class="col-12">
           <div class="teacher-info-box" id="teacherInfoBox">
             <div class="row align-items-center">
-              <div class="col-md-3">
-                <div class="info-label">Name</div>
-                <div class="info-value" id="infoName">—</div>
-              </div>
-              <div class="col-md-3">
-                <div class="info-label">Department</div>
-                <div class="info-value" id="infoDept">—</div>
-              </div>
-              <div class="col-md-3">
-                <div class="info-label">Employee ID</div>
-                <div class="info-value" id="infoEmpId">—</div>
-              </div>
-              <div class="col-md-3">
-                <div class="info-label">Staff Type</div>
-                <div class="info-value" id="infoStaffType">—</div>
-              </div>
+              <div class="col-md-3"><div class="info-label">Name</div><div class="info-value" id="infoName">—</div></div>
+              <div class="col-md-3"><div class="info-label">Department</div><div class="info-value" id="infoDept">—</div></div>
+              <div class="col-md-3"><div class="info-label">Employee ID</div><div class="info-value" id="infoEmpId">—</div></div>
+              <div class="col-md-3"><div class="info-label">Staff Type</div><div class="info-value" id="infoStaffType">—</div></div>
             </div>
           </div>
         </div>
-
-        <!-- Leave Type — loaded dynamically based on teacher's staffType + quota -->
         <div class="col-md-6">
-          <label for="leaveType" class="form-label">
-            Leave Type
-            <span class="text-muted small" id="leaveTypeHint" style="display:none;">
-              — filtered for <strong id="staffTypeLabel"></strong>
-            </span>
+          <label for="leaveType" class="form-label">Leave Type
+            <span class="text-muted small" id="leaveTypeHint" style="display:none;">— filtered for <strong id="staffTypeLabel"></strong></span>
           </label>
           <select class="form-select" id="leaveType" disabled>
             <option value="">Select a teacher first to load leave types…</option>
@@ -174,8 +102,6 @@
             <a href="leave-types.html" class="text-info small">⚙ Manage Leave Types</a>
           </div>
         </div>
-
-        <!-- Duration type -->
         <div class="col-md-6">
           <label for="leaveDuration" class="form-label">Duration</label>
           <select class="form-select" id="leaveDuration">
@@ -183,35 +109,23 @@
             <option value="Half Day">Half Day</option>
           </select>
         </div>
-
-        <!-- Start Date -->
         <div class="col-md-6">
           <label for="startDate" class="form-label">Start Date</label>
           <input type="date" class="form-control" id="startDate" required>
         </div>
-
-        <!-- End Date -->
         <div class="col-md-6">
           <label for="endDate" class="form-label">End Date</label>
           <input type="date" class="form-control" id="endDate" required>
         </div>
-
-        <!-- Buttons -->
         <div class="col-12 d-flex gap-2 flex-wrap">
           <button type="submit" class="btn btn-primary">Submit Leave</button>
           <button type="button" class="btn btn-secondary" id="showBalanceButton">Show Balance</button>
           <button type="button" class="btn btn-outline-secondary" id="clearBtn">✖ Clear</button>
         </div>
-
       </div>
     </form>
-
-    <!-- Status message -->
     <div id="leaveMessage" class="mt-3"></div>
-
-    <!-- Leave Balance Summary -->
     <div id="leaveSummary" class="mt-3"></div>
-
   </main>
 
   <!-- Confirmation Modal -->
@@ -239,19 +153,15 @@
     const API_BASE      = 'https://ums-app1.onrender.com/api';
     let allTeachers     = [];
     let selectedTeacher = null;
-    let teacherLeaveTypes = []; // stores leave types loaded for selected teacher
+    let teacherLeaveTypes = [];
 
-    // ── Load all teachers for dropdown ────────────────────────────────────────
     async function loadTeachers() {
       try {
         const res   = await fetch(API_BASE + '/teachers');
         allTeachers = await res.json();
-      } catch (err) {
-        console.error('Could not load teachers:', err.message);
-      }
+      } catch (err) { console.error('Could not load teachers:', err.message); }
     }
 
-    // ── Searchable teacher dropdown ───────────────────────────────────────────
     function renderDropdown(list) {
       const box = document.getElementById('teacherDropdownList');
       box.innerHTML = '';
@@ -260,13 +170,10 @@
         box.style.display = 'block'; return;
       }
       list.forEach(function(t) {
-        const div       = document.createElement('div');
+        const div = document.createElement('div');
         div.className   = 'dd-item';
         div.textContent = t.name + ' — ' + t.empId + ' [' + (t.staffType || 'Teaching Staff') + '] (' + (t.department || 'N/A') + ')';
-        div.addEventListener('mousedown', function(e) {
-          e.preventDefault();
-          selectTeacher(t);
-        });
+        div.addEventListener('mousedown', function(e) { e.preventDefault(); selectTeacher(t); });
         box.appendChild(div);
       });
       box.style.display = 'block';
@@ -274,28 +181,21 @@
 
     async function selectTeacher(t) {
       selectedTeacher = t;
-      document.getElementById('teacherSearch').value   = t.name + ' (' + t.empId + ')';
-      document.getElementById('teacherId').value        = t.empId;
-      document.getElementById('infoName').textContent   = t.name        || '—';
-      document.getElementById('infoDept').textContent   = t.department  || '—';
-      document.getElementById('infoEmpId').textContent  = t.empId       || '—';
-
+      document.getElementById('teacherSearch').value  = t.name + ' (' + t.empId + ')';
+      document.getElementById('teacherId').value       = t.empId;
+      document.getElementById('infoName').textContent  = t.name       || '—';
+      document.getElementById('infoDept').textContent  = t.department || '—';
+      document.getElementById('infoEmpId').textContent = t.empId      || '—';
       const staffType = t.staffType || 'Teaching Staff';
-      const stEl      = document.getElementById('infoStaffType');
-      stEl.innerHTML  = staffType +
-        '<span class="staff-badge ' + (staffType === 'Teaching Staff' ? 'teaching' : 'nonteaching') + '">' +
-        (staffType === 'Teaching Staff' ? '📚 Teaching' : '🏢 Non-Teaching') + '</span>';
-
+      const stEl = document.getElementById('infoStaffType');
+      stEl.innerHTML = staffType + '<span class="staff-badge ' + (staffType === 'Teaching Staff' ? 'teaching' : 'nonteaching') + '">' + (staffType === 'Teaching Staff' ? '📚 Teaching' : '🏢 Non-Teaching') + '</span>';
       document.getElementById('teacherInfoBox').style.display = 'block';
       document.getElementById('teacherDropdownList').style.display = 'none';
-
-      // Load leave types for this specific teacher
       await loadLeaveTypesForTeacher(t.empId);
     }
 
     function clearTeacher() {
-      selectedTeacher   = null;
-      teacherLeaveTypes = [];
+      selectedTeacher = null; teacherLeaveTypes = [];
       document.getElementById('teacherSearch').value = '';
       document.getElementById('teacherId').value     = '';
       document.getElementById('teacherInfoBox').style.display = 'none';
@@ -303,9 +203,8 @@
       document.getElementById('leaveTypeNote').style.display  = 'none';
       document.getElementById('leaveSummary').innerHTML       = '';
       document.getElementById('leaveMessage').innerHTML       = '';
-
       const sel = document.getElementById('leaveType');
-      sel.disabled  = true;
+      sel.disabled = true;
       sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
     }
 
@@ -314,67 +213,47 @@
       clearTeacher();
       if (!q) { document.getElementById('teacherDropdownList').style.display = 'none'; return; }
       renderDropdown(allTeachers.filter(function(t) {
-        return (t.name  || '').toLowerCase().includes(q) ||
-               (t.empId || '').toLowerCase().includes(q) ||
-               (t.department || '').toLowerCase().includes(q);
+        return (t.name||'').toLowerCase().includes(q)||(t.empId||'').toLowerCase().includes(q)||(t.department||'').toLowerCase().includes(q);
       }));
     });
     document.getElementById('teacherSearch').addEventListener('focus', function() {
       if (!this.value.trim()) renderDropdown(allTeachers);
     });
     document.getElementById('teacherSearch').addEventListener('blur', function() {
-      setTimeout(function() {
-        document.getElementById('teacherDropdownList').style.display = 'none';
-      }, 150);
+      setTimeout(function() { document.getElementById('teacherDropdownList').style.display = 'none'; }, 150);
     });
 
-    // ── Load leave types for specific teacher (staffType + quota) ─────────────
     async function loadLeaveTypesForTeacher(empId) {
       const sel = document.getElementById('leaveType');
-      sel.disabled  = true;
+      sel.disabled = true;
       sel.innerHTML = '<option value="">Loading leave types…</option>';
-
       try {
         const year = new Date().getFullYear();
         const res  = await fetch(API_BASE + '/teacher-leave-types?empId=' + encodeURIComponent(empId) + '&year=' + year);
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error || 'Failed to load leave types.');
-
         teacherLeaveTypes = data.leaveTypes || [];
-
         if (!teacherLeaveTypes.length) {
-          sel.innerHTML = '<option value="">No leave types available. Add on Leave Types page.</option>';
-          sel.disabled  = true;
-          return;
+          sel.innerHTML = '<option value="">No leave types available.</option>';
+          sel.disabled  = true; return;
         }
-
-        // Show staff type label
         document.getElementById('staffTypeLabel').textContent = data.staffType;
         document.getElementById('leaveTypeHint').style.display = '';
-
         sel.innerHTML = '';
-
-        // Group: Global (applicable to this staff type)
         const globalOnes = teacherLeaveTypes.filter(function(lt) { return !lt.isCustom; });
         const customOnes = teacherLeaveTypes.filter(function(lt) { return lt.isCustom; });
-
         if (globalOnes.length) {
           const grp = document.createElement('optgroup');
           grp.label = '📋 Standard Leaves — ' + data.staffType;
           globalOnes.forEach(function(lt) {
             const opt = document.createElement('option');
             opt.value = lt.leaveTypeName;
-            opt.text  = lt.leaveTypeName + ' (max ' + lt.maxDays + ' days/year)' +
-                        (lt.isOverridden ? ' ✦ custom quota' : '');
-            opt.dataset.maxDays  = lt.maxDays;
-            opt.dataset.isCustom = false;
-            opt.dataset.notes    = lt.notes || '';
+            opt.text  = lt.leaveTypeName + ' (max ' + lt.maxDays + ' days/year)' + (lt.isOverridden ? ' ✦ custom quota' : '');
+            opt.dataset.maxDays = lt.maxDays; opt.dataset.notes = lt.notes || '';
             grp.appendChild(opt);
           });
           sel.appendChild(grp);
         }
-
         if (customOnes.length) {
           const grp = document.createElement('optgroup');
           grp.label = '⭐ Special Leaves — Assigned to ' + data.teacherName;
@@ -382,117 +261,77 @@
             const opt = document.createElement('option');
             opt.value = lt.leaveTypeName;
             opt.text  = lt.leaveTypeName + ' (max ' + lt.maxDays + ' days)';
-            opt.dataset.maxDays  = lt.maxDays;
-            opt.dataset.isCustom = true;
-            opt.dataset.notes    = lt.notes || '';
+            opt.dataset.maxDays = lt.maxDays; opt.dataset.notes = lt.notes || '';
             grp.appendChild(opt);
           });
           sel.appendChild(grp);
         }
-
         sel.disabled = false;
-
       } catch (err) {
-        sel.innerHTML = '<option value="">Error loading leave types: ' + err.message + '</option>';
+        sel.innerHTML = '<option value="">Error: ' + err.message + '</option>';
         sel.disabled  = true;
       }
     }
 
-    // ── Show notes when leave type changes ────────────────────────────────────
     document.getElementById('leaveType').addEventListener('change', function() {
-      const opt   = this.options[this.selectedIndex];
+      const opt = this.options[this.selectedIndex];
       const notes = opt && opt.dataset ? opt.dataset.notes : '';
       const noteEl = document.getElementById('leaveTypeNote');
-      const noteTextEl = document.getElementById('leaveNoteText');
-
-      if (notes && notes.trim()) {
-        noteTextEl.textContent = notes;
-        noteEl.style.display = '';
-      } else {
-        noteEl.style.display = 'none';
-      }
+      if (notes && notes.trim()) { document.getElementById('leaveNoteText').textContent = notes; noteEl.style.display = ''; }
+      else { noteEl.style.display = 'none'; }
     });
 
-    // ── Show Balance ──────────────────────────────────────────────────────────
     document.getElementById('showBalanceButton').addEventListener('click', async function() {
       const empId = document.getElementById('teacherId').value.trim();
       const summary = document.getElementById('leaveSummary');
-      if (!empId) {
-        summary.innerHTML = '<div class="alert alert-danger">Please select a teacher first.</div>';
-        return;
-      }
+      if (!empId) { summary.innerHTML = '<div class="alert alert-danger">Please select a teacher first.</div>'; return; }
       try {
         const res  = await fetch(API_BASE + '/teacher-leave-balance?empId=' + encodeURIComponent(empId));
         const data = await res.json();
-        if (!res.ok) { summary.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Could not fetch balance.') + '</div>'; return; }
-
+        if (!res.ok) { summary.innerHTML = '<div class="alert alert-danger">' + (data.error||'Could not fetch balance.') + '</div>'; return; }
         const name = selectedTeacher ? selectedTeacher.name : empId;
-        let html = '<h5 class="mt-3">Leave Balance for <strong>' + name + '</strong> ' +
-          '<span class="text-muted small">(' + empId + ' — ' + data.year + ')</span>' +
-          (data.staffType ? ' <span class="staff-badge ' + (data.staffType === 'Teaching Staff' ? 'teaching' : 'nonteaching') + '">' + data.staffType + '</span>' : '') +
-          '</h5>' +
+        let html = '<h5 class="mt-3">Leave Balance for <strong>' + name + '</strong> <span class="text-muted small">(' + empId + ' — ' + data.year + ')</span></h5>' +
           '<div class="table-responsive"><table class="table table-bordered table-sm mt-2 balance-table" style="max-width:600px;">' +
           '<thead><tr><th>Leave Type</th><th class="text-center">Total</th><th class="text-center">Used</th><th class="text-center">Remaining</th></tr></thead><tbody>';
-
         for (const [type, info] of Object.entries(data.balance)) {
-          const rem      = info.remaining;
+          const rem = info.remaining;
           const rowClass = rem === 0 ? 'balance-row-bad' : rem <= 3 ? 'balance-row-warn' : 'balance-row-ok';
-          html += '<tr class="' + rowClass + '">' +
-            '<td>' + type + '</td>' +
-            '<td class="text-center">' + info.total + '</td>' +
-            '<td class="text-center">' + info.used + '</td>' +
-            '<td class="text-center"><strong>' + rem + (rem === 0 ? ' ❌' : rem <= 3 ? ' ⚠️' : ' ✅') + '</strong></td>' +
-            '</tr>';
+          html += '<tr class="' + rowClass + '"><td>' + type + '</td><td class="text-center">' + info.total + '</td><td class="text-center">' + info.used + '</td><td class="text-center"><strong>' + rem + (rem===0?' ❌':rem<=3?' ⚠️':' ✅') + '</strong></td></tr>';
         }
-        if (!Object.keys(data.balance).length) {
-          html += '<tr><td colspan="4" class="text-center text-muted">No leave data found.</td></tr>';
-        }
+        if (!Object.keys(data.balance).length) html += '<tr><td colspan="4" class="text-center text-muted">No leave data found.</td></tr>';
         html += '</tbody></table></div>';
         summary.innerHTML = html;
-
-      } catch (err) {
-        document.getElementById('leaveSummary').innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
-      }
+      } catch (err) { document.getElementById('leaveSummary').innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>'; }
     });
 
-    // ── Clear button ──────────────────────────────────────────────────────────
     document.getElementById('clearBtn').addEventListener('click', function() {
       clearTeacher();
       document.getElementById('leaveForm').reset();
       const sel = document.getElementById('leaveType');
-      sel.disabled  = true;
+      sel.disabled = true;
       sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
     });
 
-    // ── Leave form submit → confirmation modal ────────────────────────────────
     document.getElementById('leaveForm').addEventListener('submit', function(e) {
       e.preventDefault();
-
-      const empId     = document.getElementById('teacherId').value.trim();
+      const empId = document.getElementById('teacherId').value.trim();
       const leaveType = document.getElementById('leaveType').value;
       const startDate = document.getElementById('startDate').value;
       const endDate   = document.getElementById('endDate').value;
       const durType   = document.getElementById('leaveDuration').value;
       const name      = selectedTeacher ? selectedTeacher.name : empId;
       const staffType = selectedTeacher ? (selectedTeacher.staffType || 'Teaching Staff') : '';
-
       const msgEl = document.getElementById('leaveMessage');
-
       if (!empId)     { msgEl.innerHTML = '<div class="alert alert-danger">Please select a teacher.</div>'; return; }
       if (!leaveType) { msgEl.innerHTML = '<div class="alert alert-danger">Please select a leave type.</div>'; return; }
       if (!startDate) { msgEl.innerHTML = '<div class="alert alert-danger">Please select a Start Date.</div>'; return; }
       if (!endDate)   { msgEl.innerHTML = '<div class="alert alert-danger">Please select an End Date.</div>'; return; }
-
       const start = new Date(startDate), end = new Date(endDate);
       if (end < start) { msgEl.innerHTML = '<div class="alert alert-danger">End date cannot be before start date.</div>'; return; }
-
       let days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
       if (durType === 'Half Day') days = 0.5;
-
-      // Get max days for selected leave type
       const selOpt  = document.getElementById('leaveType').options[document.getElementById('leaveType').selectedIndex];
       const maxDays = selOpt && selOpt.dataset.maxDays ? selOpt.dataset.maxDays : '—';
-
       document.getElementById('confirmLeaveBody').innerHTML =
         '<table class="table table-sm mb-0">' +
         '<tr><th style="width:40%">Teacher Name</th><td><strong>' + name + '</strong></td></tr>' +
@@ -502,66 +341,51 @@
         '<tr><th>Start Date</th><td><strong>' + startDate + '</strong></td></tr>' +
         '<tr><th>End Date</th><td><strong>' + endDate + '</strong></td></tr>' +
         '<tr><th>Duration</th><td><strong>' + days + ' day' + (days !== 1 ? 's' : '') + ' (' + durType + ')</strong></td></tr>' +
-        '</table>' +
-        '<p class="mt-3 mb-0 text-muted small">Do you want to grant this leave?</p>';
-
+        '</table><p class="mt-3 mb-0 text-muted small">Do you want to grant this leave?</p>';
       $('#confirmLeaveBtn').data('leaveData', { empId, name, staffType, leaveType, startDate, endDate, duration: days, durType });
       new bootstrap.Modal(document.getElementById('confirmLeaveModal')).show();
     });
 
-    // ── Confirm Leave ─────────────────────────────────────────────────────────
     document.getElementById('confirmLeaveBtn').addEventListener('click', async function() {
       const d = $(this).data('leaveData');
       if (!d) return;
-
       bootstrap.Modal.getInstance(document.getElementById('confirmLeaveModal')).hide();
-
       try {
         const res  = await fetch(API_BASE + '/teacher-leaves', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ empId: d.empId, startDate: d.startDate, endDate: d.endDate, leaveType: d.leaveType, duration: d.duration })
         });
         const data = await res.json();
-
         if (data.success) {
           document.getElementById('leaveMessage').innerHTML =
-            '<div class="alert alert-success">✅ Leave applied for <strong>' + d.name + '</strong>! ' +
-            '<strong>' + d.duration + ' day(s)</strong> of <strong>' + d.leaveType + '</strong> ' +
-            'from <strong>' + d.startDate + '</strong> to <strong>' + d.endDate + '</strong>.</div>';
-
-          // Auto-refresh balance
+            '<div class="alert alert-success">✅ Leave applied for <strong>' + d.name + '</strong>! <strong>' + d.duration + ' day(s)</strong> of <strong>' + d.leaveType + '</strong> from <strong>' + d.startDate + '</strong> to <strong>' + d.endDate + '</strong>.</div>';
           document.getElementById('showBalanceButton').click();
           document.getElementById('leaveForm').reset();
           document.getElementById('teacherInfoBox').style.display = 'none';
           document.getElementById('leaveTypeHint').style.display  = 'none';
           const sel = document.getElementById('leaveType');
-          sel.disabled  = true;
+          sel.disabled = true;
           sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
-          selectedTeacher   = null;
-          teacherLeaveTypes = [];
+          selectedTeacher = null; teacherLeaveTypes = [];
         } else {
-          document.getElementById('leaveMessage').innerHTML =
-            '<div class="alert alert-danger">❌ ' + (data.error || 'Failed to apply leave.') + '</div>';
+          document.getElementById('leaveMessage').innerHTML = '<div class="alert alert-danger">❌ ' + (data.error || 'Failed to apply leave.') + '</div>';
         }
       } catch (err) {
-        document.getElementById('leaveMessage').innerHTML =
-          '<div class="alert alert-danger">❌ Server error: ' + err.message + '</div>';
+        document.getElementById('leaveMessage').innerHTML = '<div class="alert alert-danger">❌ Server error: ' + err.message + '</div>';
       }
     });
 
-    // ── Logout ────────────────────────────────────────────────────────────────
-    document.getElementById('logoutButton').addEventListener('click', function(e) {
+    // ── FIXED: Logout ─────────────────────────────────────────────────────────
+    document.getElementById('db-logout').addEventListener('click', function(e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';
     });
 
-    // ── Init ──────────────────────────────────────────────────────────────────
     $(document).ready(function() {
       sessionStorage.setItem('umsLoggedIn', 'true');
       loadTeachers();
     });
   </script>
-
 </body>
 </html>

@@ -221,7 +221,7 @@
   <script>
     // ── Smart API URL — works locally AND on Render ───────────────────────────
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:3001/api'
+      ? 'https://ums-app1.onrender.com'
       : (window.location.origin + '/api');
 
     let allTeachersAtt = [];
@@ -519,7 +519,7 @@
       }
     }
 
-    document.getElementById('logoutButton').addEventListener('click',function(e){
+    document.getElementById('db-logout').addEventListener('click',function(e){
       e.preventDefault(); sessionStorage.removeItem('umsLoggedIn'); window.location.href='index.html';
     });
 

@@ -81,7 +81,6 @@ function countSundaysInYear(year) {
 }
 
 // ── Load leave types from DB into any <select> ────────────────────────────────
-// currentValue: pre-select this option after loading
 async function loadLeaveTypesIntoSelect(selectId, currentValue) {
   const $sel = $(selectId);
   $sel.html('<option value="">-- Loading... --</option>');
@@ -92,10 +91,8 @@ async function loadLeaveTypesIntoSelect(selectId, currentValue) {
       const selected = (t.leaveTypeName === currentValue) ? 'selected' : '';
       $sel.append(`<option value="${t.leaveTypeName}" ${selected}>${t.leaveTypeName}</option>`);
     });
-    // Ensure pre-selection works even if option was added after val()
     if (currentValue) $sel.val(currentValue);
   } catch (e) {
-    // Fallback hardcoded if API fails
     const fallback = ['Medical', 'Casual', 'Duty', 'Compoff'];
     $sel.html('<option value="">-- Select --</option>');
     fallback.forEach(f => {
@@ -492,8 +489,8 @@ $(document).ready(function () {
     }
   });
 
-  // ── Logout ──────────────────────────────────────────────────────────────────
-  $('#logoutButton').on('click', function (e) {
+  // ── FIXED: Logout — works for both #logoutButton and #db-logout ─────────────
+  $('#logoutButton, #db-logout').on('click', function (e) {
     e.preventDefault();
     logout();
   });
@@ -620,8 +617,8 @@ $(document).ready(function () {
       education:  $('#editEducation').val()  || null,
       department: $('#editDepartment').val() || null,
     };
-    if (!teacher.name || !teacher.empId || !teacher.email || !teacher.department) {
-      $('#editMessage').html('<div class="alert alert-danger">Name, Employee ID, Email and Department are required.</div>');
+    if (!teacher.name || !teacher.empId || !teacher.department) {
+      $('#editMessage').html('<div class="alert alert-danger">Name, Employee ID and Department are required.</div>');
       return;
     }
     try {
@@ -673,8 +670,8 @@ $(document).ready(function () {
       class_xii: safeVal('#editStudentClassXII') || null,
       aadhar:    safeVal('#editStudentAadhar')   || null,
     };
-    if (!student.name || !student.rollno || !student.email || !student.course || !student.branch) {
-      $('#editStudentMessage').html('<div class="alert alert-danger">Name, Roll No, Email, Course and Branch are required.</div>');
+    if (!student.name || !student.rollno || !student.course || !student.branch) {
+      $('#editStudentMessage').html('<div class="alert alert-danger">Name, Roll No, Course and Branch are required.</div>');
       return;
     }
     try {
@@ -697,15 +694,12 @@ $(document).ready(function () {
   });
 
   // ── Edit Leave — open modal ─────────────────────────────────────────────────
-  // ✅ FIX: Loads leave types from DB dynamically, pre-selects current leave type
   $(document).on('click', '.edit-leave', async function () {
     let l;
     try { l = JSON.parse(decodeURIComponent($(this).data('leave'))); }
     catch (e) { alert('Could not load leave data.'); return; }
 
     const teacherName = $(this).data('teacher-name') || '';
-
-    // Fill the non-dropdown fields first
     $('#editLeaveId').val(l.id             || '');
     $('#editLeaveEmpId').val(l.empId       || '');
     $('#editLeaveTeacherName').val(teacherName);
@@ -713,15 +707,11 @@ $(document).ready(function () {
     $('#editLeaveEndDate').val(l.endDate    || l.date || '');
     $('#editLeaveStatus').val(l.status      || 'Pending');
     $('#editLeaveMessage').html('');
-
-    // ✅ Load leave types from DB then pre-select the current leave type
     await loadLeaveTypesIntoSelect('#editLeaveType', l.leaveType || '');
-
     new bootstrap.Modal(document.getElementById('editLeaveModal')).show();
   });
 
   // ── Edit Leave — save ───────────────────────────────────────────────────────
-  // ✅ FIX: After save, re-render table so status badge updates immediately
   $('#saveLeaveEditBtn').on('click', async function () {
     const id        = $('#editLeaveId').val();
     const startDate = $('#editLeaveStartDate').val();
@@ -743,22 +733,16 @@ $(document).ready(function () {
         startDate, endDate, leaveType, status, duration: String(duration)
       });
       bootstrap.Modal.getInstance(document.getElementById('editLeaveModal')).hide();
-
-      // ✅ Show success with current status so user sees balance will update
       const statusNote = status === 'Rejected'
         ? ' Leave balance has been <strong>restored</strong> for this teacher.'
         : status === 'Approved'
           ? ' Leave has been <strong>approved</strong> and deducted from balance.'
           : ' Leave is <strong>pending</strong> and temporarily deducted from balance.';
-
       $('#leaveTableMessage').html(`<div class="alert alert-success alert-dismissible">
         ✅ Leave updated successfully. ${statusNote}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>`);
-
-      // ✅ Re-render table so status badge updates immediately without page refresh
       renderLeaveList(safeVal('#filterTeacherId'));
-
     } catch (err) {
       $('#editLeaveMessage').html(`<div class="alert alert-danger">❌ ${err.message}</div>`);
     }
@@ -809,9 +793,7 @@ $(document).ready(function () {
     } catch (err) { alert('Delete failed: ' + err.message); }
   });
 
-  // ══════════════════════════════════════════════════════════════════════════
   // ── ATTENDANCE PAGE ───────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
   if (currentPage === 'teacher-attendance.html') {
 
     const thisYear = new Date().getFullYear();

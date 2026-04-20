@@ -336,7 +336,7 @@
       pendingDeleteId = null;
     });
 
-    $('#logoutButton').on('click', function(e) { e.preventDefault(); sessionStorage.removeItem('umsLoggedIn'); window.location.href = 'index.html'; });
+    $('#db-logout').on('click', function(e) { e.preventDefault(); sessionStorage.removeItem('umsLoggedIn'); window.location.href = 'index.html'; });
 
     $(document).ready(function() { sessionStorage.setItem('umsLoggedIn', 'true'); loadLeaveTypes(); });
   </script>
