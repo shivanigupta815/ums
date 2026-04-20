@@ -21,6 +21,7 @@
     .badge-married     { background: #d1fae5; color: #065f46; }
     .badge-single      { background: #fef3c7; color: #92400e; }
     .badge-divorced    { background: #fee2e2; color: #991b1b; }
+    .badge-widowed     { background: #e0e7ff; color: #3730a3; }
     .badge-teaching    { background: #ede9fe; color: #5b21b6; }
     .badge-nonteaching { background: #fee2e2; color: #991b1b; }
     #tableMessage .alert { margin-bottom: 0; }
@@ -102,7 +103,6 @@
         <div class="modal-body">
           <form id="editTeacherForm" class="row g-3">
             <input type="hidden" id="editOriginalEmpId">
-
             <div class="col-md-6">
               <label class="form-label">Name <span class="text-danger">*</span></label>
               <input class="form-control" id="editName" required>
@@ -198,18 +198,35 @@
   <script src="script.js"></script>
 
   <script>
-    // Block script.js from rendering its own teacher table on this page
-    window.renderTeachers = function() { return; };
+    // ── Neutralise ALL conflicting handlers from script.js ────────────────────
+    // This runs after script.js has registered its $(document).ready callbacks.
+    // jQuery fires ready handlers in registration order, so ours runs last.
+    $(document).ready(function () {
 
-    // Also remove script.js's saveEditBtn handler before our own runs
-    $(document).ready(function() {
+      // Remove script.js's delegated handlers for teacher actions
+      $(document).off('click', '.remove-teacher');
+      $(document).off('click', '.edit-teacher');
+
+      // Remove script.js's #saveEditBtn handler
       $('#saveEditBtn').off('click');
+
+      // Remove script.js's search handlers (we bind our own below)
+      $('#searchBtn').off('click');
+      $('#clearBtn').off('click');
+      $('#searchInput').off('keydown');
+
+      // Remove script.js's logout handler (we bind our own below)
+      $('#db-logout').off('click');
+
     });
 
-    // ── FIXED: Always use Render API URL ──────────────────────────────────────
+    // ── Prevent script.js renderTeachers from overwriting our table ───────────
+    window.renderTeachers = function () { return; };
+
+    // ── API base ──────────────────────────────────────────────────────────────
     window.TAPI = 'https://ums-app1.onrender.com/api';
 
-    // ── Safe display helper ────────────────────────────────────────────────────
+    // ── Safe display helper ───────────────────────────────────────────────────
     function disp(val) {
       if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') {
         return '<span class="text-muted">—</span>';
@@ -217,7 +234,7 @@
       return String(val);
     }
 
-    // ── Badge helpers ──────────────────────────────────────────────────────────
+    // ── Badge helpers ─────────────────────────────────────────────────────────
     var VALID_STAFF   = ['Teaching Staff', 'Non-Teaching Staff'];
     var VALID_GENDER  = ['Male', 'Female', 'Other'];
     var VALID_MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
@@ -236,8 +253,8 @@
 
     function maritalBadge(val) {
       if (!val || !VALID_MARITAL.includes(val)) return '<span class="text-muted">—</span>';
-      var cls = val === 'Married' ? 'badge-married' : val === 'Divorced' ? 'badge-divorced' : 'badge-single';
-      return '<span class="info-badge ' + cls + '">' + val + '</span>';
+      var clsMap = { Married: 'badge-married', Divorced: 'badge-divorced', Widowed: 'badge-widowed', Single: 'badge-single' };
+      return '<span class="info-badge ' + (clsMap[val] || 'badge-single') + '">' + val + '</span>';
     }
 
     function emailDisp(val) {
@@ -245,10 +262,11 @@
       return '<a href="mailto:' + val + '" style="color:inherit;">' + val + '</a>';
     }
 
-    // ── Load Teachers ──────────────────────────────────────────────────────────
+    // ── Load Teachers ─────────────────────────────────────────────────────────
     async function loadTeachers(filter) {
       var tbody = document.getElementById('teacherList');
-      tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3">' +
+        '<div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
 
       try {
         var res      = await fetch(window.TAPI + '/teachers');
@@ -256,7 +274,7 @@
 
         if (filter) {
           var q = filter.toLowerCase();
-          teachers = teachers.filter(function(t) {
+          teachers = teachers.filter(function (t) {
             return (t.empId      || '').toLowerCase().includes(q) ||
                    (t.name       || '').toLowerCase().includes(q) ||
                    (t.department || '').toLowerCase().includes(q) ||
@@ -273,7 +291,7 @@
         }
 
         tbody.innerHTML = '';
-        teachers.forEach(function(t) {
+        teachers.forEach(function (t) {
           var safeData = JSON.stringify({
             empId:         t.empId         || '',
             name:          t.name          || '',
@@ -285,9 +303,9 @@
             aadhar:        t.aadhar        || '',
             department:    t.department    || '',
             education:     t.education     || '',
-            staffType:     VALID_STAFF.includes(t.staffType)       ? t.staffType      : '',
-            gender:        VALID_GENDER.includes(t.gender)         ? t.gender         : '',
-            maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus  : ''
+            staffType:     VALID_STAFF.includes(t.staffType)       ? t.staffType     : '',
+            gender:        VALID_GENDER.includes(t.gender)         ? t.gender        : '',
+            maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus : ''
           });
           var encoded = encodeURIComponent(safeData);
 
@@ -307,38 +325,39 @@
             '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">' + disp(t.address) + '</td>' +
             '<td>' + disp(t.aadhar) + '</td>' +
             '<td class="action-btn text-center">' +
-              '<button class="btn btn-sm btn-warning edit-teacher me-1" data-teacher="' + encoded + '">✏️ Edit</button>' +
-              '<button class="btn btn-sm btn-danger remove-teacher" data-empid="' + (t.empId || '') + '">🗑️ Delete</button>' +
+              '<button class="btn btn-sm btn-warning td-edit-teacher me-1" data-teacher="' + encoded + '">✏️ Edit</button>' +
+              '<button class="btn btn-sm btn-danger td-delete-teacher" data-empid="' + (t.empId || '') + '">🗑️ Delete</button>' +
             '</td>';
 
           tbody.appendChild(row);
         });
 
-      } catch(err) {
+      } catch (err) {
         tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger py-3">Error: ' + err.message + '</td></tr>';
       }
     }
 
     // ── Search ────────────────────────────────────────────────────────────────
-    document.getElementById('searchBtn').addEventListener('click', function() {
+    document.getElementById('searchBtn').addEventListener('click', function () {
       loadTeachers(document.getElementById('searchInput').value.trim());
     });
-    document.getElementById('clearBtn').addEventListener('click', function() {
+    document.getElementById('clearBtn').addEventListener('click', function () {
       document.getElementById('searchInput').value = '';
       loadTeachers();
     });
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    document.getElementById('searchInput').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') loadTeachers(this.value.trim());
     });
 
     // ── Edit button → open modal ──────────────────────────────────────────────
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.edit-teacher');
+    // Note: using unique class "td-edit-teacher" so script.js handlers never fire
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.td-edit-teacher');
       if (!btn) return;
 
       var t;
       try { t = JSON.parse(decodeURIComponent(btn.dataset.teacher)); }
-      catch(err) { alert('Could not load teacher data.'); return; }
+      catch (err) { alert('Could not load teacher data.'); return; }
 
       document.getElementById('editOriginalEmpId').value  = t.empId         || '';
       document.getElementById('editEmpId').value          = t.empId         || '';
@@ -360,7 +379,7 @@
     });
 
     // ── Save Edit ─────────────────────────────────────────────────────────────
-    document.getElementById('saveEditBtn').addEventListener('click', async function() {
+    document.getElementById('saveEditBtn').addEventListener('click', async function () {
       var originalEmpId = document.getElementById('editOriginalEmpId').value;
       var teacher = {
         name:          document.getElementById('editName').value.trim(),
@@ -394,59 +413,73 @@
         });
         var data = await res.json();
         if (data.success) {
+          // Close modal cleanly
           var modalEl = document.getElementById('editTeacherModal');
-          var modal = bootstrap.Modal.getInstance(modalEl);
+          var modal   = bootstrap.Modal.getInstance(modalEl);
           if (modal) modal.hide();
           document.body.classList.remove('modal-open');
           document.body.style.removeProperty('padding-right');
-          document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+          document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
 
           document.getElementById('tableMessage').innerHTML =
             '<div class="alert alert-success alert-dismissible">✅ Teacher updated successfully.' +
             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-          setTimeout(function() { loadTeachers(); }, 300);
+          setTimeout(function () { loadTeachers(); }, 300);
         } else {
           document.getElementById('editMessage').innerHTML =
-            '<div class="alert alert-danger">❌ ' + (data.error || 'Failed.') + '</div>';
+            '<div class="alert alert-danger">❌ ' + (data.error || 'Update failed.') + '</div>';
         }
-      } catch(err) {
+      } catch (err) {
         document.getElementById('editMessage').innerHTML =
           '<div class="alert alert-danger">❌ ' + err.message + '</div>';
       }
     });
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    document.addEventListener('click', async function(e) {
-      var btn = e.target.closest('.remove-teacher');
+    // Using unique class "td-delete-teacher" — completely isolated from script.js
+    document.addEventListener('click', async function (e) {
+      var btn = e.target.closest('.td-delete-teacher');
       if (!btn) return;
 
       var empId = btn.dataset.empid;
-      const ok = await umsConfirmDelete('Teacher ' + empId);
+
+      // Use native confirm — works even if ums-confirm.js fails to load
+      var ok = window.confirm('Delete Teacher ' + empId + '?\n\nThis action cannot be undone.');
       if (!ok) return;
+
+      // Disable button to prevent double-clicks
+      btn.disabled = true;
+      btn.textContent = '⏳';
 
       try {
         var res  = await fetch(window.TAPI + '/teachers/' + encodeURIComponent(empId), { method: 'DELETE' });
         var data = await res.json();
         if (data.success) {
           document.getElementById('tableMessage').innerHTML =
-            '<div class="alert alert-success alert-dismissible">✅ Teacher deleted.' +
+            '<div class="alert alert-success alert-dismissible">✅ Teacher <strong>' + empId + '</strong> deleted.' +
             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
           loadTeachers();
         } else {
+          btn.disabled = false;
+          btn.textContent = '🗑️ Delete';
           alert('Delete failed: ' + (data.error || 'Unknown error'));
         }
-      } catch(err) { alert('Delete failed: ' + err.message); }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = '🗑️ Delete';
+        alert('Delete failed: ' + err.message);
+      }
     });
 
-    // ── FIXED: Logout ─────────────────────────────────────────────────────────
-    document.getElementById('db-logout').addEventListener('click', function(e) {
+    // ── Logout ────────────────────────────────────────────────────────────────
+    document.getElementById('db-logout').addEventListener('click', function (e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';
     });
 
     // ── Init ──────────────────────────────────────────────────────────────────
-    window.addEventListener('DOMContentLoaded', function() { loadTeachers(); });
+    window.addEventListener('DOMContentLoaded', function () { loadTeachers(); });
   </script>
 </body>
 </html>
