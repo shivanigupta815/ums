@@ -438,7 +438,21 @@ app.get('/api/teacher-leave-balance', async(req,res)=>{
 });
 
 // ── TEACHER LEAVES ────────────────────────────────────────────────────────────
-app.get('/api/teacher-leaves', async(req,res)=>{ try{const empId=req.query.empId; res.json(empId?await query('SELECT * FROM teacherleave WHERE "empId"=$1',[empId]):await query('SELECT * FROM teacherleave'));}catch(err){res.status(500).json({error:err.message});} });
+app.get('/api/teacher-leaves', async(req,res)=>{
+  try{
+    const empId = req.query.empId;
+    const rows = empId
+      ? await query('SELECT * FROM teacherleave WHERE "empId"=$1',[empId])
+      : await query('SELECT * FROM teacherleave');
+    const formatted = rows.map(r => ({
+      ...r,
+      date      : formatDate(r.date),
+      startDate : formatDate(r.startDate),
+      endDate   : formatDate(r.endDate)
+    }));
+    res.json(formatted);
+  }catch(err){res.status(500).json({error:err.message});}
+});
 app.post('/api/teacher-leaves', async(req,res)=>{
   const b=req.body; const empId=b.empId; const startDate=b.startDate||b.date; const endDate=b.endDate||b.date; const leaveType=b.leaveType||'Casual';
   if(!empId) return res.status(400).json({error:'Teacher ID is required.'});
