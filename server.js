@@ -37,6 +37,11 @@ async function query(sql, params) {
   }
 }
 
+function formatDate(val) {
+  if (!val) return null;
+  return new Date(val).toISOString().split('T')[0];
+}
+
 // ── Keep-alive ping every 4 minutes ──────────────────────────────────────────
 setInterval(async () => {
   try {
