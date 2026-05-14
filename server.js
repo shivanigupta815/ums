@@ -316,6 +316,112 @@ async function getLeaveLimits() {
   }
 }
 
+// ── OTP Store (in-memory) ─────────────────────────────────────────────────────
+// Add this near the top of your server.js, after existing requires
+const otpStore = {}; // { username: { otp, expires, email } }
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ── FORGOT PASSWORD: Send OTP ─────────────────────────────────────────────────
+// POST /api/forgot-password
+// Body: { username }
+// Looks up teacher with matching username (empId) and sends OTP to their email
+app.post('/api/forgot-password', async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  try {
+    // Check login table
+    const loginRows = await query('SELECT * FROM login WHERE username=$1', [username]);
+    if (!loginRows.length) return res.status(404).json({ error: 'Username not found.' });
+
+    // Find email — check teacher table first, then admin fallback
+    let email = null;
+    const teacherRows = await query('SELECT email FROM teacher WHERE "empId"=$1', [username]);
+    if (teacherRows.length && teacherRows[0].email) {
+      email = teacherRows[0].email;
+    } else {
+      // fallback: use system EMAIL_USER for admin
+      email = EMAIL_USER;
+    }
+
+    if (!email) return res.status(400).json({ error: 'No email found for this account. Contact admin.' });
+
+    const otp = generateOTP();
+    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    otpStore[username] = { otp, expires, email };
+
+    // Send OTP email
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+        <div style="background:#1e40af;padding:28px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:8px;">🔐</div>
+          <h2 style="color:#fff;margin:0;font-size:20px;">Password Reset OTP</h2>
+        </div>
+        <div style="padding:28px;background:#fff;">
+          <p style="font-size:15px;color:#374151;">Your One-Time Password for resetting your UMS account password:</p>
+          <div style="text-align:center;margin:24px 0;">
+            <span style="font-size:42px;font-weight:800;letter-spacing:12px;color:#1e40af;background:#eff6ff;padding:16px 28px;border-radius:10px;display:inline-block;">${otp}</span>
+          </div>
+          <p style="font-size:13px;color:#6b7280;background:#fef9c3;padding:10px 14px;border-radius:6px;border-left:4px solid #eab308;">
+            ⏰ This OTP is valid for <strong>10 minutes only</strong>. Do not share it with anyone.
+          </p>
+        </div>
+        <div style="background:#f8fafc;padding:14px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;">University Management System — Automated Email</p>
+        </div>
+      </div>`;
+
+    await transporter.sendMail({
+      from: `"UMS System" <${EMAIL_USER}>`,
+      to: email,
+      subject: '🔐 UMS Password Reset OTP',
+      html
+    });
+
+    console.log(`📧 OTP sent to ${email} for user: ${username}`);
+    res.json({ success: true, message: `OTP sent to registered email.`, maskedEmail: email.replace(/(.{2})(.*)(@.*)/, '$1***$3') });
+
+  } catch (err) {
+    console.error('❌ Forgot password error:', err.message);
+    res.status(500).json({ error: 'Failed to send OTP: ' + err.message });
+  }
+});
+
+// ── FORGOT PASSWORD: Verify OTP & Reset Password ──────────────────────────────
+// POST /api/reset-password
+// Body: { username, otp, newPassword }
+app.post('/api/reset-password', async (req, res) => {
+  const { username, otp, newPassword } = req.body;
+  if (!username || !otp || !newPassword) {
+    return res.status(400).json({ error: 'Username, OTP and new password are required.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+
+  const record = otpStore[username];
+  if (!record) return res.status(400).json({ error: 'No OTP requested for this user.' });
+  if (Date.now() > record.expires) {
+    delete otpStore[username];
+    return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+  }
+  if (record.otp !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid OTP. Please check and try again.' });
+  }
+
+  try {
+    await query('UPDATE login SET password=$1 WHERE username=$2', [newPassword, username]);
+    delete otpStore[username]; // clear OTP after use
+    console.log(`✅ Password reset for user: ${username}`);
+    res.json({ success: true, message: 'Password reset successfully! You can now log in.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reset password: ' + err.message });
+  }
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 app.get('/', (req, res) => res.redirect('/dashboard.html'));

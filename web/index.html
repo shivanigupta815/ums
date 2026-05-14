@@ -6,8 +6,57 @@
     <title>University Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+      /* ── Forgot Password Modal Styles ── */
+      .fp-step { display: none; }
+      .fp-step.active { display: block; }
+
+      .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 18px 0; }
+      .otp-inputs input {
+        width: 48px; height: 56px;
+        font-size: 24px; font-weight: 700;
+        text-align: center;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        outline: none;
+        transition: border-color .2s, box-shadow .2s;
+      }
+      .otp-inputs input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13,110,253,.15);
+      }
+      .otp-inputs input.filled { border-color: #198754; background: #f0fdf4; }
+
+      .fp-step-indicator {
+        display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+      }
+      .fp-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #dee2e6; transition: background .3s;
+      }
+      .fp-dot.active { background: #0d6efd; }
+      .fp-dot.done   { background: #198754; }
+
+      .resend-timer { font-size: 13px; color: #6b7280; text-align: center; margin-top: 8px; }
+      .resend-timer a { cursor: pointer; text-decoration: underline; }
+
+      .password-toggle { position: relative; }
+      .password-toggle input { padding-right: 44px; }
+      .password-toggle .toggle-btn {
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+        border: none; background: none; cursor: pointer; color: #6b7280; font-size: 18px;
+        padding: 0; line-height: 1;
+      }
+
+      .fp-success-icon { font-size: 64px; text-align: center; margin-bottom: 12px; }
+
+      #fpModal .modal-header { border-bottom: none; padding-bottom: 0; }
+      #fpModal .modal-footer { border-top: none; }
+    </style>
   </head>
   <body>
+
+    <!-- ── Splash Screen ── -->
     <div id="splash-screen" class="d-flex align-items-center justify-content-center vh-100 bg-gradient">
       <div class="text-center text-white">
         <h1 class="display-4">Welcome to University Management System</h1>
@@ -18,6 +67,7 @@
       </div>
     </div>
 
+    <!-- ── Login Screen ── -->
     <div id="login-screen" class="d-none">
       <div class="container-fluid py-5">
         <div class="row justify-content-center align-items-center">
@@ -28,15 +78,23 @@
                   <h4 class="mb-2">University Management System</h4>
                   <p class="mb-0">Quick, secure access to your admin dashboard</p>
                 </div>
-                <form id="login-form" class="d-flex flex-column flex-md-row align-items-center gap-2 w-100">
-                  <div class="flex-fill">
-                    <input type="text" class="form-control form-control-lg" id="username" placeholder="Username" required>
+                <div class="w-100">
+                  <form id="login-form" class="d-flex flex-column flex-md-row align-items-center gap-2">
+                    <div class="flex-fill">
+                      <input type="text" class="form-control form-control-lg" id="username" placeholder="Username" required>
+                    </div>
+                    <div class="flex-fill">
+                      <input type="password" class="form-control form-control-lg" id="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg px-5">Sign In</button>
+                  </form>
+                  <div class="text-end mt-2">
+                    <a href="#" class="text-muted small" id="forgotPasswordLink"
+                       style="text-decoration:none; font-size:13px;">
+                      🔐 Forgot Password?
+                    </a>
                   </div>
-                  <div class="flex-fill">
-                    <input type="password" class="form-control form-control-lg" id="password" placeholder="Password" required>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-lg px-5">Sign In</button>
-                </form>
+                </div>
                 <div id="login-alert" class="alert alert-danger mt-3 d-none w-100" role="alert"></div>
               </div>
             </div>
@@ -45,8 +103,350 @@
       </div>
     </div>
 
+    <!-- ── Forgot Password Modal ── -->
+    <div class="modal fade" id="fpModal" tabindex="-1" aria-labelledby="fpModalLabel" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+          <div class="modal-header px-4 pt-4">
+            <h5 class="modal-title fw-bold" id="fpModalLabel">🔐 Reset Password</h5>
+            <button type="button" class="btn-close" id="fpCloseBtn"></button>
+          </div>
+          <div class="modal-body px-4 pb-2">
+
+            <!-- Step Indicator -->
+            <div class="fp-step-indicator">
+              <div class="fp-dot active" id="dot1"></div>
+              <div class="fp-dot" id="dot2"></div>
+              <div class="fp-dot" id="dot3"></div>
+            </div>
+
+            <!-- Step 1: Enter Username -->
+            <div class="fp-step active" id="fpStep1">
+              <p class="text-muted small mb-3">Enter your username and we'll send an OTP to your registered email.</p>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Username</label>
+                <input type="text" class="form-control form-control-lg" id="fpUsername" placeholder="Enter your username">
+              </div>
+              <div id="fpStep1Alert" class="alert d-none mt-2" role="alert"></div>
+              <button class="btn btn-primary w-100 btn-lg" id="fpSendOtpBtn">
+                <span id="fpSendOtpText">Send OTP</span>
+                <span id="fpSendOtpSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+              </button>
+            </div>
+
+            <!-- Step 2: Enter OTP -->
+            <div class="fp-step" id="fpStep2">
+              <p class="text-muted small mb-1">Enter the 6-digit OTP sent to your email:</p>
+              <p class="fw-semibold text-primary small mb-3" id="fpMaskedEmail"></p>
+
+              <div class="otp-inputs" id="otpInputs">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-box" inputmode="numeric">
+              </div>
+
+              <div class="resend-timer" id="resendTimer"></div>
+              <div id="fpStep2Alert" class="alert d-none mt-2" role="alert"></div>
+
+              <button class="btn btn-primary w-100 btn-lg mt-3" id="fpVerifyOtpBtn">
+                <span id="fpVerifyOtpText">Verify OTP</span>
+                <span id="fpVerifyOtpSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+              </button>
+              <button class="btn btn-link w-100 mt-2 text-muted small" id="fpBackToStep1">← Back</button>
+            </div>
+
+            <!-- Step 3: New Password -->
+            <div class="fp-step" id="fpStep3">
+              <p class="text-muted small mb-3">✅ OTP verified! Set your new password below.</p>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">New Password</label>
+                <div class="password-toggle">
+                  <input type="password" class="form-control form-control-lg" id="fpNewPassword" placeholder="Min. 6 characters">
+                  <button type="button" class="toggle-btn" onclick="togglePwd('fpNewPassword', this)">👁</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Confirm Password</label>
+                <div class="password-toggle">
+                  <input type="password" class="form-control form-control-lg" id="fpConfirmPassword" placeholder="Repeat password">
+                  <button type="button" class="toggle-btn" onclick="togglePwd('fpConfirmPassword', this)">👁</button>
+                </div>
+              </div>
+
+              <!-- Password strength bar -->
+              <div class="mb-3">
+                <div class="progress" style="height:6px;border-radius:4px;">
+                  <div id="pwdStrengthBar" class="progress-bar" style="width:0%;transition:width .3s;"></div>
+                </div>
+                <small id="pwdStrengthText" class="text-muted"></small>
+              </div>
+
+              <div id="fpStep3Alert" class="alert d-none mt-2" role="alert"></div>
+              <button class="btn btn-success w-100 btn-lg" id="fpResetBtn">
+                <span id="fpResetText">Reset Password</span>
+                <span id="fpResetSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+              </button>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div class="fp-step" id="fpStep4">
+              <div class="fp-success-icon">🎉</div>
+              <h5 class="text-center fw-bold text-success mb-2">Password Reset Successful!</h5>
+              <p class="text-center text-muted small">Your password has been updated. You can now log in with your new password.</p>
+              <button class="btn btn-primary w-100 btn-lg mt-3" id="fpLoginNowBtn">Go to Login</button>
+            </div>
+
+          </div>
+          <div class="modal-footer px-4 pb-4" style="border:none;">
+            <p class="text-muted" style="font-size:11px;margin:0;">
+              🔒 OTP is valid for 10 minutes. Do not share it with anyone.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
+
+    <script>
+    // ── Forgot Password Logic ──────────────────────────────────────────────────
+    const fpModal   = new bootstrap.Modal(document.getElementById('fpModal'));
+    let currentStep = 1;
+    let resendInterval = null;
+    let verifiedUsername = '';
+
+    // Open modal
+    document.getElementById('forgotPasswordLink').addEventListener('click', e => {
+      e.preventDefault();
+      resetFPModal();
+      fpModal.show();
+    });
+    document.getElementById('fpCloseBtn').addEventListener('click', () => fpModal.hide());
+    document.getElementById('fpLoginNowBtn').addEventListener('click', () => fpModal.hide());
+
+    function goToStep(n) {
+      document.querySelectorAll('.fp-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('fpStep' + n).classList.add('active');
+      // Update dots (only 3 dots for 4 steps — step4 = all done)
+      ['dot1','dot2','dot3'].forEach((id, i) => {
+        const dot = document.getElementById(id);
+        dot.classList.remove('active','done');
+        const stepN = i + 1;
+        if (stepN < n)       dot.classList.add('done');
+        else if (stepN === n) dot.classList.add('active');
+      });
+      currentStep = n;
+    }
+
+    function showAlert(stepId, message, type = 'danger') {
+      const el = document.getElementById(stepId);
+      el.className = `alert alert-${type} mt-2`;
+      el.textContent = message;
+      el.classList.remove('d-none');
+    }
+    function hideAlert(stepId) {
+      document.getElementById(stepId).classList.add('d-none');
+    }
+
+    function setLoading(btnId, spinnerId, textId, loading) {
+      document.getElementById(spinnerId).classList.toggle('d-none', !loading);
+      document.getElementById(btnId).disabled = loading;
+    }
+
+    function resetFPModal() {
+      goToStep(1);
+      document.getElementById('fpUsername').value = '';
+      document.getElementById('fpNewPassword').value = '';
+      document.getElementById('fpConfirmPassword').value = '';
+      document.querySelectorAll('.otp-box').forEach(i => { i.value = ''; i.classList.remove('filled'); });
+      ['fpStep1Alert','fpStep2Alert','fpStep3Alert'].forEach(hideAlert);
+      if (resendInterval) clearInterval(resendInterval);
+      verifiedUsername = '';
+    }
+
+    // ── Step 1: Send OTP ──────────────────────────────────────────────────────
+    document.getElementById('fpSendOtpBtn').addEventListener('click', async () => {
+      const username = document.getElementById('fpUsername').value.trim();
+      if (!username) return showAlert('fpStep1Alert', 'Please enter your username.');
+      hideAlert('fpStep1Alert');
+      setLoading('fpSendOtpBtn', 'fpSendOtpSpinner', 'fpSendOtpText', true);
+
+      try {
+        const res  = await fetch('/api/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+
+        verifiedUsername = username;
+        document.getElementById('fpMaskedEmail').textContent = '📧 ' + data.maskedEmail;
+        goToStep(2);
+        startResendTimer();
+        setTimeout(() => document.querySelector('.otp-box').focus(), 300);
+      } catch (err) {
+        showAlert('fpStep1Alert', err.message);
+      } finally {
+        setLoading('fpSendOtpBtn', 'fpSendOtpSpinner', 'fpSendOtpText', false);
+      }
+    });
+
+    // ── OTP Input Auto-advance ────────────────────────────────────────────────
+    document.querySelectorAll('.otp-box').forEach((input, idx, all) => {
+      input.addEventListener('input', e => {
+        input.value = input.value.replace(/\D/g,'').slice(-1);
+        if (input.value) {
+          input.classList.add('filled');
+          if (idx < all.length - 1) all[idx + 1].focus();
+        } else {
+          input.classList.remove('filled');
+        }
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          all[idx - 1].focus();
+          all[idx - 1].value = '';
+          all[idx - 1].classList.remove('filled');
+        }
+      });
+      input.addEventListener('paste', e => {
+        e.preventDefault();
+        const pasted = (e.clipboardData.getData('text') || '').replace(/\D/g,'').slice(0,6);
+        pasted.split('').forEach((ch, i) => {
+          if (all[i]) { all[i].value = ch; all[i].classList.add('filled'); }
+        });
+        if (all[Math.min(pasted.length, 5)]) all[Math.min(pasted.length, 5)].focus();
+      });
+    });
+
+    // ── Resend Timer ──────────────────────────────────────────────────────────
+    function startResendTimer(seconds = 60) {
+      const el = document.getElementById('resendTimer');
+      if (resendInterval) clearInterval(resendInterval);
+      let left = seconds;
+      el.innerHTML = `Resend OTP in <strong>${left}s</strong>`;
+      resendInterval = setInterval(() => {
+        left--;
+        if (left <= 0) {
+          clearInterval(resendInterval);
+          el.innerHTML = `<a id="resendLink">Resend OTP</a>`;
+          document.getElementById('resendLink').addEventListener('click', async () => {
+            el.textContent = 'Sending...';
+            try {
+              const res = await fetch('/api/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: verifiedUsername })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              showAlert('fpStep2Alert', 'OTP resent successfully!', 'success');
+              startResendTimer();
+            } catch (err) {
+              showAlert('fpStep2Alert', err.message);
+            }
+          });
+        } else {
+          el.innerHTML = `Resend OTP in <strong>${left}s</strong>`;
+        }
+      }, 1000);
+    }
+
+    // ── Step 2: Verify OTP ────────────────────────────────────────────────────
+    document.getElementById('fpVerifyOtpBtn').addEventListener('click', async () => {
+      const otp = [...document.querySelectorAll('.otp-box')].map(i => i.value).join('');
+      if (otp.length < 6) return showAlert('fpStep2Alert', 'Please enter the complete 6-digit OTP.');
+      hideAlert('fpStep2Alert');
+      setLoading('fpVerifyOtpBtn', 'fpVerifyOtpSpinner', 'fpVerifyOtpText', true);
+
+      // We verify OTP at final step (server verifies during reset),
+      // but do a pre-check feel by moving to step 3
+      // Actual verification happens at /api/reset-password
+      try {
+        // Lightweight check: just move to step 3
+        // Real verification at reset time prevents double-trip
+        goToStep(3);
+        document.getElementById('fpNewPassword').focus();
+      } catch (err) {
+        showAlert('fpStep2Alert', err.message);
+      } finally {
+        setLoading('fpVerifyOtpBtn', 'fpVerifyOtpSpinner', 'fpVerifyOtpText', false);
+      }
+    });
+
+    document.getElementById('fpBackToStep1').addEventListener('click', () => goToStep(1));
+
+    // ── Password Strength ─────────────────────────────────────────────────────
+    document.getElementById('fpNewPassword').addEventListener('input', function() {
+      const val = this.value;
+      const bar  = document.getElementById('pwdStrengthBar');
+      const text = document.getElementById('pwdStrengthText');
+      let score = 0;
+      if (val.length >= 6)  score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const levels = [
+        { pct: 0,   color: '',          label: '' },
+        { pct: 20,  color: '#ef4444',   label: 'Very Weak' },
+        { pct: 40,  color: '#f97316',   label: 'Weak' },
+        { pct: 60,  color: '#eab308',   label: 'Fair' },
+        { pct: 80,  color: '#22c55e',   label: 'Strong' },
+        { pct: 100, color: '#16a34a',   label: 'Very Strong' },
+      ];
+      const lvl = levels[score] || levels[0];
+      bar.style.width = lvl.pct + '%';
+      bar.style.background = lvl.color;
+      text.textContent = lvl.label;
+      text.style.color = lvl.color;
+    });
+
+    // ── Step 3: Reset Password ────────────────────────────────────────────────
+    document.getElementById('fpResetBtn').addEventListener('click', async () => {
+      const otp         = [...document.querySelectorAll('.otp-box')].map(i => i.value).join('');
+      const newPassword = document.getElementById('fpNewPassword').value;
+      const confirmPwd  = document.getElementById('fpConfirmPassword').value;
+      hideAlert('fpStep3Alert');
+
+      if (newPassword.length < 6)       return showAlert('fpStep3Alert', 'Password must be at least 6 characters.');
+      if (newPassword !== confirmPwd)    return showAlert('fpStep3Alert', 'Passwords do not match.');
+
+      setLoading('fpResetBtn', 'fpResetSpinner', 'fpResetText', true);
+
+      try {
+        const res  = await fetch('/api/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: verifiedUsername, otp, newPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Reset failed');
+
+        if (resendInterval) clearInterval(resendInterval);
+        goToStep(4);
+      } catch (err) {
+        showAlert('fpStep3Alert', err.message);
+        // If OTP invalid, send back to OTP step
+        if (err.message.toLowerCase().includes('otp')) goToStep(2);
+      } finally {
+        setLoading('fpResetBtn', 'fpResetSpinner', 'fpResetText', false);
+      }
+    });
+
+    // ── Toggle password visibility ────────────────────────────────────────────
+    function togglePwd(inputId, btn) {
+      const inp = document.getElementById(inputId);
+      if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
+      else                         { inp.type = 'password'; btn.textContent = '👁';  }
+    }
+    </script>
   </body>
 </html>
