@@ -780,7 +780,7 @@ $(document).ready(function () {
       renderStudents();
     } catch (err) { alert('Delete failed: ' + err.message); }
   });
-
+    
   // ── Delete teacher ──────────────────────────────────────────────────────────
   $(document).on('click', '.remove-teacher', async function () {
     const empId = $(this).data('empid');

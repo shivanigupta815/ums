@@ -90,8 +90,8 @@
                   </form>
                   <div class="text-end mt-2">
                     <a href="#" class="text-muted small" id="forgotPasswordLink"
-                       style="text-decoration:none; font-size:13px;">
-                      🔐 Forgot Password?
+                       style="text-decoration:none; font-size:13px; color:#0d6efd !important;">
+                      Forgot Password?
                     </a>
                   </div>
                 </div>
@@ -108,7 +108,7 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
           <div class="modal-header px-4 pt-4">
-            <h5 class="modal-title fw-bold" id="fpModalLabel">🔐 Reset Password</h5>
+            <h5 class="modal-title fw-bold" id="fpModalLabel">Reset Password</h5>
             <button type="button" class="btn-close" id="fpCloseBtn"></button>
           </div>
           <div class="modal-body px-4 pb-2">
@@ -122,10 +122,15 @@
 
             <!-- Step 1: Enter Username -->
             <div class="fp-step active" id="fpStep1">
-              <p class="text-muted small mb-3">Enter your username and we'll send an OTP to your registered email.</p>
+              <p class="text-muted small mb-3">Enter your username. If your email is registered, OTP will be sent automatically. Otherwise enter your email below.</p>
               <div class="mb-3">
                 <label class="form-label fw-semibold">Username</label>
                 <input type="text" class="form-control form-control-lg" id="fpUsername" placeholder="Enter your username">
+              </div>
+              <div class="mb-3" id="fpEmailRow" style="display:none;">
+                <label class="form-label fw-semibold">Your Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control form-control-lg" id="fpEmail" placeholder="Enter your email to receive OTP">
+                <div class="form-text text-warning">⚠️ No email found for this account. Please enter your email manually.</div>
               </div>
               <div id="fpStep1Alert" class="alert d-none mt-2" role="alert"></div>
               <button class="btn btn-primary w-100 btn-lg" id="fpSendOtpBtn">
@@ -262,6 +267,8 @@
     function resetFPModal() {
       goToStep(1);
       document.getElementById('fpUsername').value = '';
+      document.getElementById('fpEmail').value = '';
+      document.getElementById('fpEmailRow').style.display = 'none';
       document.getElementById('fpNewPassword').value = '';
       document.getElementById('fpConfirmPassword').value = '';
       document.querySelectorAll('.otp-box').forEach(i => { i.value = ''; i.classList.remove('filled'); });
@@ -270,10 +277,34 @@
       verifiedUsername = '';
     }
 
+    // ── Step 1: Username blur — check if email exists ─────────────────────────
+    document.getElementById('fpUsername').addEventListener('blur', async function() {
+      const username = this.value.trim();
+      if (!username) return;
+      try {
+        const res  = await fetch('/api/check-user-email?username=' + encodeURIComponent(username));
+        const data = await res.json();
+        const emailRow = document.getElementById('fpEmailRow');
+        if (data.hasEmail) {
+          emailRow.style.display = 'none';
+          document.getElementById('fpEmail').value = '';
+        } else {
+          emailRow.style.display = 'block';
+        }
+      } catch(e) { /* ignore */ }
+    });
+
     // ── Step 1: Send OTP ──────────────────────────────────────────────────────
     document.getElementById('fpSendOtpBtn').addEventListener('click', async () => {
-      const username = document.getElementById('fpUsername').value.trim();
+      const username  = document.getElementById('fpUsername').value.trim();
+      const manualEmail = document.getElementById('fpEmail').value.trim();
+      const emailRowVisible = document.getElementById('fpEmailRow').style.display !== 'none';
+
       if (!username) return showAlert('fpStep1Alert', 'Please enter your username.');
+      if (emailRowVisible && !manualEmail) return showAlert('fpStep1Alert', 'Please enter your email address.');
+      if (emailRowVisible && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(manualEmail)) {
+        return showAlert('fpStep1Alert', 'Please enter a valid email address.');
+      }
       hideAlert('fpStep1Alert');
       setLoading('fpSendOtpBtn', 'fpSendOtpSpinner', 'fpSendOtpText', true);
 
@@ -281,7 +312,7 @@
         const res  = await fetch('/api/forgot-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username })
+          body: JSON.stringify({ username, manualEmail: emailRowVisible ? manualEmail : '' })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
