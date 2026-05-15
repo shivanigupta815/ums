@@ -3,6 +3,23 @@
  * All data operations go to the Express API → MySQL
  * API base: https://ums-app1.onrender.com
  */
+// ── Fallback: agar ums-confirm.js load na ho toh browser confirm use karo ──
+if (typeof umsConfirmDelete === 'undefined') {
+  window.umsConfirm = function(options) {
+    options = options || {};
+    const msg = (options.title || 'Are you sure?') + '\n' + (options.message || '');
+    return Promise.resolve(window.confirm(msg));
+  };
+  window.umsConfirmDelete = function(itemName) {
+    return Promise.resolve(window.confirm('Delete ' + (itemName || 'this record') + '?\nThis action cannot be undone.'));
+  };
+  window.umsConfirmApprove = function(itemName) {
+    return Promise.resolve(window.confirm('Approve ' + (itemName || 'this request') + '?'));
+  };
+  window.umsConfirmReject = function(itemName) {
+    return Promise.resolve(window.confirm('Reject ' + (itemName || 'this request') + '?'));
+  };
+}
 
 const API = 'https://ums-app1.onrender.com/api';
 

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Teacher Details — UMS</title>
+  <title>Office Staff Details — UMS</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    #teacherTableWrapper { overflow-x: auto; }
-    #teacherTableWrapper table td, #teacherTableWrapper table th { white-space: nowrap; }
+    #staffTableWrapper { overflow-x: auto; }
+    #staffTableWrapper table td, #staffTableWrapper table th { white-space: nowrap; }
     .action-btn { white-space: nowrap; }
     .modal .form-label { color: #333 !important; font-weight: 600; }
     .info-badge {
@@ -22,9 +22,22 @@
     .badge-single      { background: #fef3c7; color: #92400e; }
     .badge-divorced    { background: #fee2e2; color: #991b1b; }
     .badge-widowed     { background: #e0e7ff; color: #3730a3; }
-    .badge-teaching    { background: #ede9fe; color: #5b21b6; }
     .badge-nonteaching { background: #fee2e2; color: #991b1b; }
     #tableMessage .alert { margin-bottom: 0; }
+
+    /* Highlight the page heading to distinguish from teacher-details */
+    .page-header-bar {
+      background: linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
   </style>
 </head>
 <body>
@@ -37,10 +50,10 @@
       </button>
       <div class="collapse navbar-collapse" id="navMenu">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link active" href="dashboard.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
           <li class="nav-item"><a class="nav-link" href="add-teacher.html">Add Teacher</a></li>
           <li class="nav-item"><a class="nav-link" href="teacher-details.html">Teacher Details</a></li>
-          <li class="nav-item"><a class="nav-link" href="office-staff-details.html">Office Staff</a></li>
+          <li class="nav-item"><a class="nav-link active" href="office-staff-details.html">Office Staff</a></li>
           <li class="nav-item"><a class="nav-link" href="apply-leave.html">Record Leave</a></li>
           <li class="nav-item"><a class="nav-link" href="leave-types.html">Leave Types</a></li>
           <li class="nav-item"><a class="nav-link" href="leave-details.html">Leave Details</a></li>
@@ -48,7 +61,7 @@
           <li class="nav-item"><a class="nav-link" href="add-student.html">Add Student</a></li>
           <li class="nav-item"><a class="nav-link" href="student-details.html">Student Details</a></li>
           <li class="nav-item"><a class="nav-link" href="fee-structure.html">Fee Structure</a></li>
-          <li class="nav-item"><a class="nav-link text-danger" href="#" id="db-logout">Logout</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="#" id="os-logout">Logout</a></li>
         </ul>
         <div class="d-flex gap-2 ms-3">
           <input class="form-control form-control-sm" id="searchInput"
@@ -62,13 +75,15 @@
 
   <main class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4 class="mb-0">Teacher Details</h4>
-      <a href="add-teacher.html" class="btn btn-primary btn-sm">+ Add Teacher</a>
+      <div class="page-header-bar">
+        🏢 Office / Non-Teaching Staff Details
+      </div>
+      <a href="add-teacher.html" class="btn btn-danger btn-sm">+ Add Staff Member</a>
     </div>
 
     <div id="tableMessage" class="mb-3"></div>
 
-    <div id="teacherTableWrapper">
+    <div id="staffTableWrapper">
       <table class="table table-bordered table-hover align-middle mb-0">
         <thead class="table-dark">
           <tr>
@@ -88,21 +103,21 @@
             <th class="text-center">Actions</th>
           </tr>
         </thead>
-        <tbody id="teacherList"></tbody>
+        <tbody id="staffList"></tbody>
       </table>
     </div>
   </main>
 
   <!-- Edit Modal -->
-  <div class="modal fade" id="editTeacherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">✏️ Edit Teacher</h5>
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">✏️ Edit Office Staff</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form id="editTeacherForm" class="row g-3">
+          <form id="editStaffForm" class="row g-3">
             <input type="hidden" id="editOriginalEmpId">
             <div class="col-md-6">
               <label class="form-label">Name <span class="text-danger">*</span></label>
@@ -122,7 +137,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control" id="editEmail" placeholder="teacher@email.com">
+              <input type="email" class="form-control" id="editEmail" placeholder="staff@email.com">
             </div>
             <div class="col-md-6">
               <label class="form-label">Phone</label>
@@ -132,35 +147,35 @@
               <label class="form-label">Department <span class="text-danger">*</span></label>
               <select class="form-select" id="editDepartment" required>
                 <option value="">-- Select --</option>
-                  <option>Commerce & Management</option>
-                  <option>Agriculture</option>
-                  <option>Botany</option>
-                  <option>Zoology</option>
-                  <option>Physics</option>
-                  <option>Chemistry</option>
-                  <option>Mathematics</option>
-                  <option>Drawing and Painting</option>
-                  <option>English</option>
-                  <option>Geography</option>
-                  <option>Hindi</option>
-                  <option>History</option>
-                  <option>Law</option>
-                  <option>Physical Education</option>
-                  <option>Political Science</option>
-                  <option>Sanskrit</option>
-                  <option>Sociology</option>
-                  <option>Lab Assistant</option>
-                  <option>Library Science</option>                 
-                  <option>Library Staff</option>
-                  <option>Economics</option>
-                  <option>Philosophy</option>
-                  <option>Psychology</option>
-                  <option>Office Staff</option>
-                  <option>College Dispensary</option>
-                  <option>Class Four Staff</option>
-                  <option>Mess</option>
-                  <option>Self Finance</option>
-                  <option>Others</option>
+                <option>Commerce & Management</option>
+                <option>Agriculture</option>
+                <option>Botany</option>
+                <option>Zoology</option>
+                <option>Physics</option>
+                <option>Chemistry</option>
+                <option>Mathematics</option>
+                <option>Drawing and Painting</option>
+                <option>English</option>
+                <option>Geography</option>
+                <option>Hindi</option>
+                <option>History</option>
+                <option>Law</option>
+                <option>Physical Education</option>
+                <option>Political Science</option>
+                <option>Sanskrit</option>
+                <option>Sociology</option>
+                <option>Lab Assistant</option>
+                <option>Library Science</option>
+                <option>Library Staff</option>
+                <option>Economics</option>
+                <option>Philosophy</option>
+                <option>Psychology</option>
+                <option>Office Staff</option>
+                <option>College Dispensary</option>
+                <option>Class Four Staff</option>
+                <option>Mess</option>
+                <option>Self Finance</option>
+                <option>Others</option>
               </select>
             </div>
             <div class="col-md-6">
@@ -173,13 +188,11 @@
                 <option>MA</option><option>BA</option>
               </select>
             </div>
+            <!-- Staff Type locked to Non-Teaching for this page -->
             <div class="col-md-6">
-              <label class="form-label">Staff Type <span class="text-danger">*</span></label>
-              <select class="form-select" id="editStaffType">
-                <option value="">-- Select --</option>
-                <option value="Teaching Staff">Teaching Staff</option>
-                <option value="Non-Teaching Staff">Non-Teaching Staff</option>
-              </select>
+              <label class="form-label">Staff Type</label>
+              <input class="form-control bg-light" value="Non-Teaching Staff" readonly>
+              <input type="hidden" id="editStaffType" value="Non-Teaching Staff">
             </div>
             <div class="col-md-6">
               <label class="form-label">Gender</label>
@@ -221,37 +234,10 @@
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="ums-confirm.js"></script>
-  <script src="script.js"></script>
 
   <script>
-    // ── Neutralise ALL conflicting handlers from script.js ────────────────────
-    // This runs after script.js has registered its $(document).ready callbacks.
-    // jQuery fires ready handlers in registration order, so ours runs last.
-    $(document).ready(function () {
-
-      // Remove script.js's delegated handlers for teacher actions
-      $(document).off('click', '.remove-teacher');
-      $(document).off('click', '.edit-teacher');
-
-      // Remove script.js's #saveEditBtn handler
-      $('#saveEditBtn').off('click');
-
-      // Remove script.js's search handlers (we bind our own below)
-      $('#searchBtn').off('click');
-      $('#clearBtn').off('click');
-      $('#searchInput').off('keydown');
-
-      // Remove script.js's logout handler (we bind our own below)
-      $('#db-logout').off('click');
-
-    });
-
-    // ── Prevent script.js renderTeachers from overwriting our table ───────────
-    window.renderTeachers = function () { return; };
-
     // ── API base ──────────────────────────────────────────────────────────────
-    window.TAPI = 'https://ums-app1.onrender.com/api';
+    var TAPI = 'https://ums-app1.onrender.com/api';
 
     // ── Safe display helper ───────────────────────────────────────────────────
     function disp(val) {
@@ -261,16 +247,8 @@
       return String(val);
     }
 
-    // ── Badge helpers ─────────────────────────────────────────────────────────
-    var VALID_STAFF   = ['Teaching Staff', 'Non-Teaching Staff'];
     var VALID_GENDER  = ['Male', 'Female', 'Other'];
     var VALID_MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
-
-    function staffBadge(val) {
-      if (!val || !VALID_STAFF.includes(val)) return '<span class="text-muted">—</span>';
-      var cls = val === 'Teaching Staff' ? 'badge-teaching' : 'badge-nonteaching';
-      return '<span class="info-badge ' + cls + '">' + val + '</span>';
-    }
 
     function genderBadge(val) {
       if (!val || !VALID_GENDER.includes(val)) return '<span class="text-muted">—</span>';
@@ -289,36 +267,42 @@
       return '<a href="mailto:' + val + '" style="color:inherit;">' + val + '</a>';
     }
 
-    // ── Load Teachers ─────────────────────────────────────────────────────────
-    async function loadTeachers(filter) {
-      var tbody = document.getElementById('teacherList');
+    // ── Load Non-Teaching Staff only ──────────────────────────────────────────
+    async function loadStaff(filter) {
+      var tbody = document.getElementById('staffList');
       tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3">' +
         '<div class="spinner-border spinner-border-sm me-2"></div>Loading...</td></tr>';
 
       try {
-        var res      = await fetch(window.TAPI + '/teachers?staffType=Teaching Staff');
-        var teachers = await res.json();
+        var res      = await fetch(TAPI + '/teachers?staffType=Non-Teaching Staff');
+        var allStaff = await res.json();
 
+        // ── KEY FILTER: only Non-Teaching Staff ───────────────────────────────
+        var staff = allStaff.filter(function (t) {
+          return t.staffType === 'Non-Teaching Staff';
+        });
+
+        // Apply search filter if provided
         if (filter) {
           var q = filter.toLowerCase();
-          teachers = teachers.filter(function (t) {
+          staff = staff.filter(function (t) {
             return (t.empId      || '').toLowerCase().includes(q) ||
                    (t.name       || '').toLowerCase().includes(q) ||
                    (t.department || '').toLowerCase().includes(q) ||
-                   (t.staffType  || '').toLowerCase().includes(q) ||
                    (t.gender     || '').toLowerCase().includes(q) ||
                    (t.email      || '').toLowerCase().includes(q) ||
                    (t.phone      || '').toLowerCase().includes(q);
           });
         }
 
-        if (!teachers.length) {
-          tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3">No teacher records found.</td></tr>';
+        if (!staff.length) {
+          tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3">' +
+            'No Non-Teaching Staff records found.</td></tr>';
           return;
         }
 
         tbody.innerHTML = '';
-        teachers.forEach(function (t) {
+        staff.forEach(function (t) {
           var safeData = JSON.stringify({
             empId:         t.empId         || '',
             name:          t.name          || '',
@@ -330,7 +314,7 @@
             aadhar:        t.aadhar        || '',
             department:    t.department    || '',
             education:     t.education     || '',
-            staffType:     VALID_STAFF.includes(t.staffType)       ? t.staffType     : '',
+            staffType:     'Non-Teaching Staff',
             gender:        VALID_GENDER.includes(t.gender)         ? t.gender        : '',
             maritalStatus: VALID_MARITAL.includes(t.maritalStatus) ? t.maritalStatus : ''
           });
@@ -344,7 +328,7 @@
             '<td>' + disp(t.dob) + '</td>' +
             '<td>' + disp(t.department) + '</td>' +
             '<td>' + disp(t.education) + '</td>' +
-            '<td>' + staffBadge(t.staffType) + '</td>' +
+            '<td><span class="info-badge badge-nonteaching">Non-Teaching Staff</span></td>' +
             '<td>' + genderBadge(t.gender) + '</td>' +
             '<td>' + maritalBadge(t.maritalStatus) + '</td>' +
             '<td>' + emailDisp(t.email) + '</td>' +
@@ -352,8 +336,8 @@
             '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">' + disp(t.address) + '</td>' +
             '<td>' + disp(t.aadhar) + '</td>' +
             '<td class="action-btn text-center">' +
-              '<button class="btn btn-sm btn-warning td-edit-teacher me-1" data-teacher="' + encoded + '">✏️ Edit</button>' +
-              '<button class="btn btn-sm btn-danger td-delete-teacher" data-empid="' + (t.empId || '') + '">🗑️ Delete</button>' +
+              '<button class="btn btn-sm btn-warning os-edit-staff me-1" data-staff="' + encoded + '">✏️ Edit</button>' +
+              '<button class="btn btn-sm btn-danger os-delete-staff" data-empid="' + (t.empId || '') + '">🗑️ Delete</button>' +
             '</td>';
 
           tbody.appendChild(row);
@@ -366,25 +350,24 @@
 
     // ── Search ────────────────────────────────────────────────────────────────
     document.getElementById('searchBtn').addEventListener('click', function () {
-      loadTeachers(document.getElementById('searchInput').value.trim());
+      loadStaff(document.getElementById('searchInput').value.trim());
     });
     document.getElementById('clearBtn').addEventListener('click', function () {
       document.getElementById('searchInput').value = '';
-      loadTeachers();
+      loadStaff();
     });
     document.getElementById('searchInput').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') loadTeachers(this.value.trim());
+      if (e.key === 'Enter') loadStaff(this.value.trim());
     });
 
     // ── Edit button → open modal ──────────────────────────────────────────────
-    // Note: using unique class "td-edit-teacher" so script.js handlers never fire
     document.addEventListener('click', function (e) {
-      var btn = e.target.closest('.td-edit-teacher');
+      var btn = e.target.closest('.os-edit-staff');
       if (!btn) return;
 
       var t;
-      try { t = JSON.parse(decodeURIComponent(btn.dataset.teacher)); }
-      catch (err) { alert('Could not load teacher data.'); return; }
+      try { t = JSON.parse(decodeURIComponent(btn.dataset.staff)); }
+      catch (err) { alert('Could not load staff data.'); return; }
 
       document.getElementById('editOriginalEmpId').value  = t.empId         || '';
       document.getElementById('editEmpId').value          = t.empId         || '';
@@ -397,18 +380,17 @@
       document.getElementById('editAadhar').value         = t.aadhar        || '';
       document.getElementById('editDepartment').value     = t.department    || '';
       document.getElementById('editEducation').value      = t.education     || '';
-      document.getElementById('editStaffType').value      = t.staffType     || '';
       document.getElementById('editGender').value         = t.gender        || '';
       document.getElementById('editMaritalStatus').value  = t.maritalStatus || '';
       document.getElementById('editMessage').innerHTML    = '';
 
-      new bootstrap.Modal(document.getElementById('editTeacherModal')).show();
+      new bootstrap.Modal(document.getElementById('editStaffModal')).show();
     });
 
     // ── Save Edit ─────────────────────────────────────────────────────────────
     document.getElementById('saveEditBtn').addEventListener('click', async function () {
       var originalEmpId = document.getElementById('editOriginalEmpId').value;
-      var teacher = {
+      var staff = {
         name:          document.getElementById('editName').value.trim(),
         fname:         document.getElementById('editFname').value.trim()    || null,
         empId:         document.getElementById('editEmpId').value.trim(),
@@ -421,27 +403,26 @@
         aadhar:        document.getElementById('editAadhar').value.trim()   || null,
         education:     document.getElementById('editEducation').value       || null,
         department:    document.getElementById('editDepartment').value,
-        staffType:     document.getElementById('editStaffType').value       || 'Teaching Staff',
+        staffType:     'Non-Teaching Staff',   // always locked for this page
         gender:        document.getElementById('editGender').value          || null,
         maritalStatus: document.getElementById('editMaritalStatus').value   || null
       };
 
-      if (!teacher.name || !teacher.empId || !teacher.department) {
+      if (!staff.name || !staff.empId || !staff.department) {
         document.getElementById('editMessage').innerHTML =
           '<div class="alert alert-danger">Name, Employee ID and Department are required.</div>';
         return;
       }
 
       try {
-        var res  = await fetch(window.TAPI + '/teachers/' + encodeURIComponent(originalEmpId), {
+        var res  = await fetch(TAPI + '/teachers/' + encodeURIComponent(originalEmpId), {
           method:  'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(teacher)
+          body:    JSON.stringify(staff)
         });
         var data = await res.json();
         if (data.success) {
-          // Close modal cleanly
-          var modalEl = document.getElementById('editTeacherModal');
+          var modalEl = document.getElementById('editStaffModal');
           var modal   = bootstrap.Modal.getInstance(modalEl);
           if (modal) modal.hide();
           document.body.classList.remove('modal-open');
@@ -449,9 +430,9 @@
           document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
 
           document.getElementById('tableMessage').innerHTML =
-            '<div class="alert alert-success alert-dismissible">✅ Teacher updated successfully.' +
+            '<div class="alert alert-success alert-dismissible">✅ Staff member updated successfully.' +
             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-          setTimeout(function () { loadTeachers(); }, 300);
+          setTimeout(function () { loadStaff(); }, 300);
         } else {
           document.getElementById('editMessage').innerHTML =
             '<div class="alert alert-danger">❌ ' + (data.error || 'Update failed.') + '</div>';
@@ -463,32 +444,25 @@
     });
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    // Using unique class "td-delete-teacher" — completely isolated from script.js
     document.addEventListener('click', async function (e) {
-      var btn = e.target.closest('.td-delete-teacher');
+      var btn = e.target.closest('.os-delete-staff');
       if (!btn) return;
 
       var empId = btn.dataset.empid;
-
-      // Use native confirm — works even if ums-confirm.js fails to load
-      var ok = window.confirm('Delete Teacher ' + empId + '?\n\nThis action cannot be undone.');
+      var ok = window.confirm('Delete Staff Member ' + empId + '?\n\nThis action cannot be undone.');
       if (!ok) return;
 
-      // Disable button to prevent double-clicks
       btn.disabled = true;
       btn.textContent = '⏳';
 
       try {
-        var res  = await fetch(window.TAPI + '/teachers/' + encodeURIComponent(empId), { method: 'DELETE' });
+        var res  = await fetch(TAPI + '/teachers/' + encodeURIComponent(empId), { method: 'DELETE' });
         var data = await res.json();
-        teachers = teachers.filter(function (t) {
-        return t.staffType === 'Teaching Staff';
-        });
         if (data.success) {
           document.getElementById('tableMessage').innerHTML =
-            '<div class="alert alert-success alert-dismissible">✅ Teacher <strong>' + empId + '</strong> deleted.' +
+            '<div class="alert alert-success alert-dismissible">✅ Staff member <strong>' + empId + '</strong> deleted.' +
             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-          loadTeachers();
+          loadStaff();
         } else {
           btn.disabled = false;
           btn.textContent = '🗑️ Delete';
@@ -502,14 +476,14 @@
     });
 
     // ── Logout ────────────────────────────────────────────────────────────────
-    document.getElementById('db-logout').addEventListener('click', function (e) {
+    document.getElementById('os-logout').addEventListener('click', function (e) {
       e.preventDefault();
       sessionStorage.removeItem('umsLoggedIn');
       window.location.href = 'index.html';
     });
 
     // ── Init ──────────────────────────────────────────────────────────────────
-    window.addEventListener('DOMContentLoaded', function () { loadTeachers(); });
+    window.addEventListener('DOMContentLoaded', function () { loadStaff(); });
   </script>
 </body>
 </html>

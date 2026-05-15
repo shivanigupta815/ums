@@ -53,14 +53,13 @@ app.use(express.static('web'));
 // ── Email Configuration ───────────────────────────────────────────────────────
 const EMAIL_USER = process.env.EMAIL_USER || 'shivanigupta18082005@gmail.com';
 const EMAIL_PASS = process.env.EMAIL_PASS || 'jrbb vtvh twxy hrje';
-
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  port: 465,
+  secure: true,
   auth: { user: EMAIL_USER, pass: EMAIL_PASS },
   tls: { rejectUnauthorized: false },
-  family: 4  // ← IPv4 force karo, IPv6 avoid
+  family: 4
 });
 
 // ── Send leave email ──────────────────────────────────────────────────────────
@@ -462,7 +461,16 @@ app.put('/api/students/:rollno', async(req,res)=>{
 app.delete('/api/students/:rollno', async(req,res)=>{ try{await query('DELETE FROM student WHERE rollno=$1',[req.params.rollno]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
 // ── TEACHERS ──────────────────────────────────────────────────────────────────
-app.get('/api/teachers', async(req,res)=>{ try{res.json(await query('SELECT * FROM teacher'));}catch(err){res.status(500).json({error:err.message});} });
+app.get('/api/teachers', async(req,res)=>{ 
+  try{
+    const {staffType} = req.query;
+    if(staffType) {
+      res.json(await query('SELECT * FROM teacher WHERE "staffType"=$1', [staffType]));
+    } else {
+      res.json(await query('SELECT * FROM teacher'));
+    }
+  }catch(err){res.status(500).json({error:err.message});} 
+});
 app.post('/api/teachers', async(req,res)=>{
   const b=req.body;
   if(!b.name||!b.empId||!b.department) return res.status(400).json({error:'Name, Employee ID and Department are required.'});
