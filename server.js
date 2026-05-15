@@ -21,13 +21,9 @@ const pool = new Pool({
 
 async function query(sql, params) {
   params = params || [];
-  // Convert MySQL ? placeholders to PostgreSQL $1,$2,...
   let i = 0;
   sql = sql.replace(/\?/g, () => '$' + (++i));
-  // Convert MySQL backticks to double quotes
   sql = sql.replace(/`/g, '"');
-  // Convert ON DUPLICATE KEY UPDATE to INSERT ... ON CONFLICT
-  // (handled per query below)
   try {
     const result = await pool.query(sql, params);
     return result.rows;
@@ -183,7 +179,6 @@ async function initDB() {
         username VARCHAR(50) NOT NULL,
         password VARCHAR(100) NOT NULL
       )`);
-    // Default admin login
     await pool.query(`
       INSERT INTO login (username, password) VALUES ('admin', 'admin123')
       ON CONFLICT DO NOTHING
@@ -317,128 +312,19 @@ async function getLeaveLimits() {
 }
 
 // ── OTP Store (in-memory) ─────────────────────────────────────────────────────
-// Add this near the top of your server.js, after existing requires
-const otpStore = {}; // { username: { otp, expires, email } }
+const otpStore = {};
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ── FORGOT PASSWORD: Send OTP ─────────────────────────────────────────────────
-// POST /api/forgot-password
-// Body: { username }
-// Looks up teacher with matching username (empId) and sends OTP to their email
-app.post('/api/forgot-password', async (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: 'Username is required.' });
-
-  try {
-    // Check login table
-    const loginRows = await query('SELECT * FROM login WHERE username=$1', [username]);
-    if (!loginRows.length) return res.status(404).json({ error: 'Username not found.' });
-
-    // Find email — check teacher table first, then admin fallback
-    let email = null;
-    const teacherRows = await query('SELECT email FROM teacher WHERE "empId"=$1', [username]);
-    if (teacherRows.length && teacherRows[0].email) {
-      email = teacherRows[0].email;
-    } else {
-      // fallback: use system EMAIL_USER for admin
-      email = EMAIL_USER;
-    }
-
-    if (!email) return res.status(400).json({ error: 'No email found for this account. Contact admin.' });
-
-    const otp = generateOTP();
-    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
-    otpStore[username] = { otp, expires, email };
-
-    // Send OTP email
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-        <div style="background:#1e40af;padding:28px;text-align:center;">
-          <div style="font-size:40px;margin-bottom:8px;">🔐</div>
-          <h2 style="color:#fff;margin:0;font-size:20px;">Password Reset OTP</h2>
-        </div>
-        <div style="padding:28px;background:#fff;">
-          <p style="font-size:15px;color:#374151;">Your One-Time Password for resetting your UMS account password:</p>
-          <div style="text-align:center;margin:24px 0;">
-            <span style="font-size:42px;font-weight:800;letter-spacing:12px;color:#1e40af;background:#eff6ff;padding:16px 28px;border-radius:10px;display:inline-block;">${otp}</span>
-          </div>
-          <p style="font-size:13px;color:#6b7280;background:#fef9c3;padding:10px 14px;border-radius:6px;border-left:4px solid #eab308;">
-            ⏰ This OTP is valid for <strong>10 minutes only</strong>. Do not share it with anyone.
-          </p>
-        </div>
-        <div style="background:#f8fafc;padding:14px;text-align:center;border-top:1px solid #e2e8f0;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">University Management System — Automated Email</p>
-        </div>
-      </div>`;
-
-    await transporter.sendMail({
-      from: `"UMS System" <${EMAIL_USER}>`,
-      to: email,
-      subject: '🔐 UMS Password Reset OTP',
-      html
-    });
-
-    console.log(`📧 OTP sent to ${email} for user: ${username}`);
-    res.json({ success: true, message: `OTP sent to registered email.`, maskedEmail: email.replace(/(.{2})(.*)(@.*)/, '$1***$3') });
-
-  } catch (err) {
-    console.error('❌ Forgot password error:', err.message);
-    res.status(500).json({ error: 'Failed to send OTP: ' + err.message });
-  }
-});
-
-// ── FORGOT PASSWORD: Verify OTP & Reset Password ──────────────────────────────
-// POST /api/reset-password
-// Body: { username, otp, newPassword }
-app.post('/api/reset-password', async (req, res) => {
-  const { username, otp, newPassword } = req.body;
-  if (!username || !otp || !newPassword) {
-    return res.status(400).json({ error: 'Username, OTP and new password are required.' });
-  }
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-  }
-
-  const record = otpStore[username];
-  if (!record) return res.status(400).json({ error: 'No OTP requested for this user.' });
-  if (Date.now() > record.expires) {
-    delete otpStore[username];
-    return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
-  }
-  if (record.otp !== otp.trim()) {
-    return res.status(400).json({ error: 'Invalid OTP. Please check and try again.' });
-  }
-
-  try {
-    await query('UPDATE login SET password=$1 WHERE username=$2', [newPassword, username]);
-    delete otpStore[username]; // clear OTP after use
-    console.log(`✅ Password reset for user: ${username}`);
-    res.json({ success: true, message: 'Password reset successfully! You can now log in.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to reset password: ' + err.message });
-  }
-});
-
-// ── OTP Store (in-memory) ─────────────────────────────────────────────────────
-// Add this near the top of your server.js, after existing requires
-const otpStore = {}; // { username: { otp, expires, email } }
-
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-// ── CHECK USER EMAIL (for frontend to show manual email field) ────────────────
-// GET /api/check-user-email?username=xxx
+// ── CHECK USER EMAIL ──────────────────────────────────────────────────────────
 app.get('/api/check-user-email', async (req, res) => {
   const { username } = req.query;
   if (!username) return res.status(400).json({ hasEmail: false });
   try {
     const loginRows = await query('SELECT * FROM login WHERE username=$1', [username]);
     if (!loginRows.length) return res.json({ hasEmail: false, exists: false });
-
     const teacherRows = await query('SELECT email FROM teacher WHERE "empId"=$1', [username]);
     const hasEmail = !!(teacherRows.length && teacherRows[0].email);
     res.json({ hasEmail, exists: true });
@@ -484,6 +370,9 @@ app.post('/api/forgot-password', async (req, res) => {
             ⏰ Valid for <strong>10 minutes only</strong>. Do not share it.
           </p>
         </div>
+        <div style="background:#f8fafc;padding:14px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;">University Management System — Automated Email</p>
+        </div>
       </div>`;
 
     await transporter.sendMail({
@@ -503,8 +392,6 @@ app.post('/api/forgot-password', async (req, res) => {
 });
 
 // ── FORGOT PASSWORD: Verify OTP & Reset Password ──────────────────────────────
-// POST /api/reset-password
-// Body: { username, otp, newPassword }
 app.post('/api/reset-password', async (req, res) => {
   const { username, otp, newPassword } = req.body;
   if (!username || !otp || !newPassword) {
@@ -889,7 +776,7 @@ app.get('/api/dashboard', async(req,res)=>{
 // ── TEACHER ATTENDANCE ────────────────────────────────────────────────────────
 app.get('/api/teacher-attendance', async(req,res)=>{ const year=parseInt(req.query.year)||new Date().getFullYear(); try{res.json(await query('SELECT * FROM teacher_attendance WHERE year=$1 ORDER BY "empId"',[year]));}catch(err){res.status(500).json({error:err.message});} });
 app.post('/api/teacher-attendance/calculate', async(req,res)=>{ const year=parseInt(req.body.year)||new Date().getFullYear(); try{ const teachers=await query('SELECT "empId",name FROM teacher'); if(!teachers.length) return res.status(404).json({error:'No teachers found.'}); const total=daysInYear(year); const sundays=countSundaysInYear(year); const working=total-sundays; const leaveRows=await query(`SELECT "empId",SUM(CAST(duration AS DECIMAL)) AS "totalLeaves" FROM teacherleave WHERE EXTRACT(YEAR FROM date::date)=$1 AND status!='Rejected' GROUP BY "empId"`,[String(year)]); const leaveMap={}; leaveRows.forEach(r=>{leaveMap[r.empId]=parseFloat(r.totalLeaves)||0;}); let saved=0; for(const t of teachers){const lt=leaveMap[t.empId]||0;const dp=Math.max(0,working-lt);const pct=working>0?((dp/working)*100).toFixed(2):'0.00'; await query(`INSERT INTO teacher_attendance ("empId","teacherName",year,"totalDays",sundays,"workingDays","leavesTaken","daysPresent","attendancePct") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT ("empId",year) DO UPDATE SET "teacherName"=EXCLUDED."teacherName","totalDays"=EXCLUDED."totalDays",sundays=EXCLUDED.sundays,"workingDays"=EXCLUDED."workingDays","leavesTaken"=EXCLUDED."leavesTaken","daysPresent"=EXCLUDED."daysPresent","attendancePct"=EXCLUDED."attendancePct","updatedAt"=CURRENT_TIMESTAMP`,[t.empId,t.name||null,year,total,sundays,working,lt.toFixed(1),dp.toFixed(1),pct]); saved++;} res.json({success:true,message:`Attendance calculated for ${saved} teacher(s).`}); }catch(err){res.status(500).json({error:err.message});} });
-app.put('/api/teacher-attendance/:id', async(req,res)=>{ const {workingDays,leavesTaken,daysPresent,attendancePct}=req.body; try{ const result=await query('UPDATE teacher_attendance SET "workingDays"=$1,"leavesTaken"=$2,"daysPresent"=$3,"attendancePct"=$4,"updatedAt"=CURRENT_TIMESTAMP WHERE id=$5',[workingDays,leavesTaken,daysPresent,attendancePct,req.params.id]); res.json({success:true}); }catch(err){res.status(500).json({error:err.message});} });
+app.put('/api/teacher-attendance/:id', async(req,res)=>{ const {workingDays,leavesTaken,daysPresent,attendancePct}=req.body; try{ await query('UPDATE teacher_attendance SET "workingDays"=$1,"leavesTaken"=$2,"daysPresent"=$3,"attendancePct"=$4,"updatedAt"=CURRENT_TIMESTAMP WHERE id=$5',[workingDays,leavesTaken,daysPresent,attendancePct,req.params.id]); res.json({success:true}); }catch(err){res.status(500).json({error:err.message});} });
 app.delete('/api/teacher-attendance/:id', async(req,res)=>{ try{await query('DELETE FROM teacher_attendance WHERE id=$1',[req.params.id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});} });
 
 // ── START ─────────────────────────────────────────────────────────────────────
