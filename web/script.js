@@ -66,6 +66,13 @@ function display(val) {
   return (val && val !== 'null') ? val : '<span class="text-muted">—</span>';
 }
 
+function formatDate(val) {
+  if (!val || val === 'null') return '<span class="text-muted">—</span>';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 // ── Attendance utilities ──────────────────────────────────────────────────────
 function daysInYear(year) {
   return ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? 366 : 365;
@@ -130,7 +137,7 @@ async function renderStudents(filterText = '') {
           <td>${display(s.rollno)}</td>
           <td>${display(s.name)}</td>
           <td>${display(s.fname)}</td>
-          <td>${display(s.dob)}</td>
+          <td>${formatDate(s.dob)}</td>
           <td>${display(s.course)}</td>
           <td>${display(s.branch)}</td>
           <td>${display(s.email)}</td>

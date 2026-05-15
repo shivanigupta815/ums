@@ -55,8 +55,12 @@ const EMAIL_USER = process.env.EMAIL_USER || 'shivanigupta18082005@gmail.com';
 const EMAIL_PASS = process.env.EMAIL_PASS || 'jrbb vtvh twxy hrje';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+  tls: { rejectUnauthorized: false },
+  family: 4  // ← IPv4 force karo, IPv6 avoid
 });
 
 // ── Send leave email ──────────────────────────────────────────────────────────
