@@ -241,10 +241,8 @@
       showDropdown(filtered);
     });
 
-   document.getElementById('teacherSearch').addEventListener('focus', function() {
-      if (!this.value.trim()) {
-        renderDropdown(allTeachers);
-      }
+    document.getElementById('teacherSearch').addEventListener('focus', function() {
+      renderDropdown(allTeachers);
     });
 
     document.getElementById('teacherSearch').addEventListener('blur', function() {
