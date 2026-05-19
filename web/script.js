@@ -544,6 +544,7 @@ $(document).ready(function () {
     isStudentPage ? renderStudents(q) : renderTeachers(q);
   });
   $('#clearBtn').on('click', function () {
+    if (currentPage === 'apply-leave.html') return; // apply-leave handle karega khud
     $('#searchInput').val('');
     isStudentPage ? renderStudents() : renderTeachers();
   });
@@ -784,8 +785,8 @@ $(document).ready(function () {
     } catch (err) { alert('Delete failed: ' + err.message); }
   });
 
-  // ── Show Balance ────────────────────────────────────────────────────────────
   $('#showBalanceButton').on('click', function () {
+    if (currentPage === 'apply-leave.html') return; // apply-leave handle karega khud
     const empId = safeVal('#teacherId');
     if (!empId) {
       $('#leaveMessage').html('<div class="alert alert-danger">Please select a teacher first.</div>');
