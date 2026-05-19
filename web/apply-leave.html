@@ -241,20 +241,15 @@
       showDropdown(filtered);
     });
 
-    document.getElementById('teacherSearch').addEventListener('focus', function() {
-      const val = this.value.trim().toLowerCase();
-      if (val && !selectedTeacher) {
-        const filtered = allTeachers.filter(function(t) {
-          return (t.name || '').toLowerCase().includes(val) ||
-                (t.empId || '').toLowerCase().includes(val);
-        });
-        showDropdown(filtered);
+   document.getElementById('teacherSearch').addEventListener('focus', function() {
+      if (!this.value.trim()) {
+        renderDropdown(allTeachers);
       }
     });
 
     document.getElementById('teacherSearch').addEventListener('blur', function() {
       setTimeout(function() {
-        document.getElementById('teacherDropdown').style.display = 'none';
+        document.getElementById('teacherDropdownList').style.display = 'none';
       }, 150);
     });
 
