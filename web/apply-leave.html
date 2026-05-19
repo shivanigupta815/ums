@@ -207,10 +207,9 @@
       sel.disabled = true;
       sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
     }
-
     document.getElementById('teacherSearch').addEventListener('input', function() {
       const q = this.value.trim().toLowerCase();
-      
+
       // Reset selection state only (don't clear the input!)
       selectedTeacher = null;
       teacherLeaveTypes = [];
@@ -224,9 +223,9 @@
       sel.disabled = true;
       sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
 
-      if (!q) { 
-        document.getElementById('teacherDropdownList').style.display = 'none'; 
-        return; 
+      if (!q) {
+        document.getElementById('teacherDropdownList').style.display = 'none';
+        return;
       }
       renderDropdown(allTeachers.filter(function(t) {
         return (t.name||'').toLowerCase().includes(q)
