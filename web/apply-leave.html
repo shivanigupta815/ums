@@ -59,12 +59,28 @@
     <h2 class="mb-1">Record Teacher Leave</h2>
     <form id="leaveForm" novalidate>
       <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Select Teacher <span class="text-muted small">(type name or ID)</span></label>
+       <div class="col-md-6">
+        <label class="form-label">Select Teacher <span class="text-muted small">(type name or ID)</span></label>
+        <div style="position:relative;">
           <input type="text" class="form-control" id="teacherSearch"
-                 list="teacherList" placeholder="Type teacher name or ID..." autocomplete="off">
-          <datalist id="teacherList"></datalist>
+                placeholder="Type teacher name or ID..." autocomplete="off">
+          <ul id="teacherDropdown" style="
+              display:none;
+              position:absolute;
+              top:100%; left:0; right:0;
+              background:#1e1b2e;
+              border:1px solid rgba(167,139,250,0.4);
+              border-radius:8px;
+              max-height:220px;
+              overflow-y:auto;
+              z-index:9999;
+              margin:2px 0 0 0;
+              padding:4px 0;
+              list-style:none;
+              box-shadow:0 8px 24px rgba(0,0,0,0.5);
+          "></ul>
         </div>
+      </div>
         <div class="col-md-6">
           <label class="form-label">Teacher ID</label>
           <input type="text" class="form-control" id="teacherId" placeholder="Auto-filled from selection" readonly style="opacity:0.8;">
@@ -158,13 +174,31 @@
     }
 
     function renderDatalist(list) {
-      const dl = document.getElementById('teacherList');
-      dl.innerHTML = '';
-      list.forEach(function(t) {
-        const opt = document.createElement('option');
-        opt.value = t.name + ' (' + t.empId + ')';
-        dl.appendChild(opt);
+  // sirf store karo, dropdown input pe filter lagega
+}
+
+    function showDropdown(filtered) {
+      const ul = document.getElementById('teacherDropdown');
+      ul.innerHTML = '';
+      if (!filtered.length) {
+        ul.innerHTML = '<li style="padding:8px 14px;color:#94a3b8;font-size:0.85rem;">No teachers found</li>';
+        ul.style.display = 'block';
+        return;
+      }
+      filtered.forEach(function(t) {
+        const li = document.createElement('li');
+        li.textContent = t.name + ' (' + t.empId + ')';
+        li.style.cssText = 'padding:8px 14px;cursor:pointer;color:#e9d5ff;font-size:0.88rem;border-bottom:1px solid rgba(167,139,250,0.1);';
+        li.addEventListener('mouseenter', function() { li.style.background = 'rgba(124,58,237,0.25)'; });
+        li.addEventListener('mouseleave', function() { li.style.background = ''; });
+        li.addEventListener('mousedown', function(e) {
+          e.preventDefault(); // blur se pehle click pakdo
+          selectTeacher(t);
+          document.getElementById('teacherDropdown').style.display = 'none';
+        });
+        ul.appendChild(li);
       });
+      ul.style.display = 'block';
     }
 
     function clearTeacher() {
@@ -180,28 +214,48 @@
       sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
     }
 
-    document.getElementById('teacherSearch').addEventListener('input', function() {
-      const val = this.value.trim();
+      document.getElementById('teacherSearch').addEventListener('input', function() {
+      const val = this.value.trim().toLowerCase();
+      // Teacher already selected aur value match karti hai toh kuch mat karo
+      if (selectedTeacher && this.value === selectedTeacher.name + ' (' + selectedTeacher.empId + ')') return;
 
-      // Try to match typed value to a teacher in allTeachers
-      const matched = allTeachers.find(function(t) {
-        return val === t.name + ' (' + t.empId + ')';
-      });
+      // Selection reset karo
+      selectedTeacher = null;
+      teacherLeaveTypes = [];
+      document.getElementById('teacherId').value = '';
+      document.getElementById('teacherInfoBox').style.display = 'none';
+      document.getElementById('leaveTypeHint').style.display = 'none';
+      document.getElementById('leaveTypeNote').style.display = 'none';
+      const sel = document.getElementById('leaveType');
+      sel.disabled = true;
+      sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
 
-      if (matched) {
-        selectTeacher(matched);
-      } else {
-        // Reset only if no match yet — don't clear input
-        selectedTeacher = null;
-        teacherLeaveTypes = [];
-        document.getElementById('teacherId').value = '';
-        document.getElementById('teacherInfoBox').style.display = 'none';
-        document.getElementById('leaveTypeHint').style.display = 'none';
-        document.getElementById('leaveTypeNote').style.display = 'none';
-        const sel = document.getElementById('leaveType');
-        sel.disabled = true;
-        sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
+      if (!val) {
+        document.getElementById('teacherDropdown').style.display = 'none';
+        return;
       }
+      const filtered = allTeachers.filter(function(t) {
+        return (t.name || '').toLowerCase().includes(val) ||
+              (t.empId || '').toLowerCase().includes(val);
+      });
+      showDropdown(filtered);
+    });
+
+    document.getElementById('teacherSearch').addEventListener('focus', function() {
+      const val = this.value.trim().toLowerCase();
+      if (val && !selectedTeacher) {
+        const filtered = allTeachers.filter(function(t) {
+          return (t.name || '').toLowerCase().includes(val) ||
+                (t.empId || '').toLowerCase().includes(val);
+        });
+        showDropdown(filtered);
+      }
+    });
+
+    document.getElementById('teacherSearch').addEventListener('blur', function() {
+      setTimeout(function() {
+        document.getElementById('teacherDropdown').style.display = 'none';
+      }, 150);
     });
 
     async function selectTeacher(t) {
