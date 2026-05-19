@@ -197,7 +197,6 @@
 
     function clearTeacher() {
       selectedTeacher = null; teacherLeaveTypes = [];
-      document.getElementById('teacherSearch').value = '';
       document.getElementById('teacherId').value     = '';
       document.getElementById('teacherInfoBox').style.display = 'none';
       document.getElementById('leaveTypeHint').style.display  = 'none';
@@ -211,17 +210,29 @@
 
     document.getElementById('teacherSearch').addEventListener('input', function() {
       const q = this.value.trim().toLowerCase();
-      clearTeacher();
-      if (!q) { document.getElementById('teacherDropdownList').style.display = 'none'; return; }
+      
+      // Reset selection state only (don't clear the input!)
+      selectedTeacher = null;
+      teacherLeaveTypes = [];
+      document.getElementById('teacherId').value = '';
+      document.getElementById('teacherInfoBox').style.display = 'none';
+      document.getElementById('leaveTypeHint').style.display = 'none';
+      document.getElementById('leaveTypeNote').style.display = 'none';
+      document.getElementById('leaveSummary').innerHTML = '';
+      document.getElementById('leaveMessage').innerHTML = '';
+      const sel = document.getElementById('leaveType');
+      sel.disabled = true;
+      sel.innerHTML = '<option value="">Select a teacher first to load leave types…</option>';
+
+      if (!q) { 
+        document.getElementById('teacherDropdownList').style.display = 'none'; 
+        return; 
+      }
       renderDropdown(allTeachers.filter(function(t) {
-        return (t.name||'').toLowerCase().includes(q)||(t.empId||'').toLowerCase().includes(q)||(t.department||'').toLowerCase().includes(q);
+        return (t.name||'').toLowerCase().includes(q)
+            || (t.empId||'').toLowerCase().includes(q)
+            || (t.department||'').toLowerCase().includes(q);
       }));
-    });
-    document.getElementById('teacherSearch').addEventListener('focus', function() {
-      if (!this.value.trim()) renderDropdown(allTeachers);
-    });
-    document.getElementById('teacherSearch').addEventListener('blur', function() {
-      setTimeout(function() { document.getElementById('teacherDropdownList').style.display = 'none'; }, 150);
     });
 
     async function loadLeaveTypesForTeacher(empId) {
